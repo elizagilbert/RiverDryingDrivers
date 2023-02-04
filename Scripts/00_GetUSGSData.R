@@ -80,4 +80,4 @@ discharge_dat %>%
   summarise_all(~sum(is.na(.)))
   
 
-#write.csv(discharge_dat, "Data/Processed/USGS_discharge.csv", row.names = F)
+write.csv(discharge_dat, "Data/Processed/USGS_discharge.csv", row.names = F)
