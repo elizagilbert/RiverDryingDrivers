@@ -2,6 +2,8 @@
 #The purpose of this data wrangle Response and Predictors for 
 #Drying subreaches: R1 = > river mile 150, R2 = 130.1 to 150, R2 = 74 to 130
 #Dry = 0, Wet = 1
+#There are rounding errors after 2019 in the response variables
+#Climate variables interpolated
 
 #Libraries ####
 library(tidyverse)
@@ -9,10 +11,11 @@ library(lubridate)
 library(zoo)
 
 #data ####
-dat_drying <- read.csv("Data/Processed/2002_2021_WetDryTenths.csv") 
+dat_drying <- read.csv("Data/Processed/2010_2021_WetDryTenths.csv") 
+
 dat_TempPrecip_LosLunas <- read.csv("Data/Raw/TempPrecip_LosLunas_GHCNDUSC00295150.csv") 
-dat_TempPrecip_BosqueDelApache <- read.csv("Data/Raw/TempPrecip_AllOtherLocations.csv") #This is R2 and I downloaded this as metric data so no conversion needed
-dat_TempPrecip_Reach3 <- read.csv("Data/Raw/TempPrecip_AllOtherLocations.csv") #I downloaded this as metric data so no conversion needed
+dat_TempPrecip_AllOtherLocs <- read.csv("Data/Raw/TempPrecip_AllOtherLocations.csv") # I downloaded this as metric data so no conversion needed
+
 dat_diversions <- read.csv("Data/Processed/MRGCD_diversion.csv")
 dat_returns <- read.csv("Data/Processed/MRGCD_returns.csv")
 dat_discharge <- read.csv("Data/Processed/USGS_discharge.csv") 
@@ -34,24 +37,23 @@ Ext_ExtChng_R1 <- dat_drying %>%
 
 #Mile Days 
 MileDays_R1 <- dat_drying %>% 
-  select(!X) %>%
+  select(!X) %>% 
   mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>% 
-  filter(RMTenthDry >150, Date >= "2010-01-01") %>% 
-  arrange(RMTenthDry) %>% 
-  group_by(RMTenthDry, grp = with(rle(DryRM), rep(seq_along(lengths), lengths))) %>% 
-  mutate(Counter = 1:n()) %>% 
-  mutate(Counter = as.numeric(Counter)) %>% 
+  filter(RMTenthDry >150) %>% 
+  mutate(DryRM2 = case_when(DryRM == 0 ~ 1,
+                            TRUE ~ 0)) %>% 
+  arrange(Date, RMTenthDry) %>% 
+  group_by(year(Date)) %>% 
+  mutate(MD = cumsum(DryRM2)/10) %>% 
   ungroup() %>% 
-  mutate(Counter2 = case_when(DryRM == 1 ~ 0,
-                              TRUE ~ Counter)) %>% 
-  select(-grp, - Counter) %>% 
   group_by(Date) %>% 
-  summarise(sum(Counter2)) %>% 
-  rename(MileDays= "sum(Counter2)") %>% 
+  mutate(MileDays = max(MD)) %>% 
+  distinct(Date, MileDays) %>% 
+  ungroup(Date) %>% 
   select(!Date)
 
 
-#Climate covariates 
+#Climate covariates
 
 TempPrecip_R1 <- dat_TempPrecip_LosLunas %>% 
   mutate(DATE = as.Date(DATE, format = "%Y-%m-%d")) %>% 
@@ -59,7 +61,7 @@ TempPrecip_R1 <- dat_TempPrecip_LosLunas %>%
   select(STATION, NAME, DATE, PRCP, TMAX, TMIN) %>% 
   rename(TempPrecipStation = STATION, StationName = NAME, Date = DATE,
          Precip_LosLunas_inch = PRCP, TempMax_LosLunas_F = TMAX, TempMin_LosLunas_F = TMIN) %>% 
-  complete(Date = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>% 
+  complete(Date = seq.Date(as.Date("2010-01-01"), as.Date("2021-12-31"), by = "day")) %>% 
   mutate(Precip_LosLunas_mm = round((Precip_LosLunas_inch*25.4),2), 
          TempMax_LosLunas_C1 = TempMax_LosLunas_F-32,
          TempMax_LosLunas_C2 = TempMax_LosLunas_C1*5,
@@ -70,7 +72,12 @@ TempPrecip_R1 <- dat_TempPrecip_LosLunas %>%
   select(Date, Precip_LosLunas2_mm, TempMax_LosLunas2_C) %>% 
   rename(Precip_mm = Precip_LosLunas2_mm, Temp_C = TempMax_LosLunas2_C) %>% 
   filter(Date >= "2010-01-01") %>% 
-  select(!Date)
+  group_by(year(Date)) %>% 
+  mutate(PrecipCum_mm = cumsum(Precip_mm), TempCum_C = cumsum(Temp_C)) %>% 
+  ungroup() %>% 
+  select(Precip_mm, Temp_C, PrecipCum_mm, TempCum_C)
+
+
 
 #Human covariates 
 
@@ -86,11 +93,14 @@ Diversions_R1 <- dat_diversions %>%
   filter(Date >= "2010-01-01") %>% 
   arrange(Date) %>% 
   distinct(Date, Diversion_Isleta_Totalcfs) %>% 
-  select(Diversion_Isleta_Totalcfs) %>% 
+  group_by(year(Date)) %>% 
+  mutate(DiversionCum_cfs = cumsum(Diversion_Isleta_Totalcfs)) %>% 
+  ungroup() %>% 
+  select(Diversion_Isleta_Totalcfs, DiversionCum_cfs) %>% 
   rename(Diversion_cfs = Diversion_Isleta_Totalcfs)
 
 
-#Returns (ALJWW, 240WW, LCZWW, PERWW) not LCZWW, it doesn't start till August 2016
+#Returns (ALJWW, 240WW, PERWW) LCZWW, isn't gaged till August 2016
 Returns_R1 <- dat_returns %>% 
   filter(DivName == "ALJWW" | DivName == "240WW" |DivName == "PERWW") %>% 
   mutate(Date = as.Date(Date, format = "%Y-%m-%d"), Month = month(Date)) %>% 
@@ -102,7 +112,10 @@ Returns_R1 <- dat_returns %>%
   ungroup() %>% 
   arrange(Date) %>% 
   distinct(Date, Returns_cfs) %>% 
-  select(Returns_cfs)
+  group_by(year(Date)) %>% 
+  mutate(ReturnsCum_cfs = cumsum(Returns_cfs)) %>% 
+  ungroup() %>% 
+  select(Returns_cfs, ReturnsCum_cfs)
 
 #Discharge
 Discharge_R1 <- dat_discharge %>% 
@@ -110,7 +123,10 @@ Discharge_R1 <- dat_discharge %>%
   filter(site_name == "BosqueFarms", dateTime <= "2021-12-31") %>% 
   complete(dateTime = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>%
   filter(dateTime >= "2010-01-01") %>% 
-  select(Discharge_cfs) 
+  group_by(year(dateTime)) %>% 
+  mutate(DischargeCum_cfs = cumsum(Discharge_cfs)) %>% 
+  ungroup() %>% 
+  select(Discharge_cfs, DischargeCum_cfs) 
 
 
 #R1 combine all data frames 
@@ -134,51 +150,42 @@ Ext_ExtChng_R2 <- dat_drying %>%
 
 #Mile Days 
 MileDays_R2 <- dat_drying %>% 
-  select(!X) %>%
+  select(!X) %>% 
   mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>% 
   filter(between(RMTenthDry, 130, 150)) %>% 
-  arrange(RMTenthDry) %>% 
-  group_by(RMTenthDry, grp = with(rle(DryRM), rep(seq_along(lengths), lengths))) %>% 
-  mutate(Counter = 1:n()) %>% 
-  mutate(Counter = as.numeric(Counter)) %>% 
+  mutate(DryRM2 = case_when(DryRM == 0 ~ 1,
+                            TRUE ~ 0)) %>% 
+  arrange(Date, RMTenthDry) %>% 
+  group_by(year(Date)) %>% 
+  mutate(MD = cumsum(DryRM2)/10) %>% 
   ungroup() %>% 
-  mutate(Counter2 = case_when(DryRM == 1 ~ 0,
-                              TRUE ~ Counter)) %>% 
-  select(-grp, - Counter) %>% 
   group_by(Date) %>% 
-  summarise(sum(Counter2)) %>% 
-  rename(MileDays = "sum(Counter2)") %>% 
-  arrange(Date) %>% 
-  filter(Date >= "2010-01-01") %>% arrange(Date) %>% 
-  select(-Date)
+  mutate(MileDays = max(MD)) %>% 
+  distinct(Date, MileDays) %>% 
+  ungroup(Date) %>% 
+  select(!Date)
 
-#Climate covariates
+#Climate covariates 
 
-TempPrecip_R2 <- dat_TempPrecip_BosqueDelApache %>% 
-  filter(NAME == "BOSQUE DEL APACHE, NM US") %>% 
+TempPrecip_R2 <- dat_TempPrecip_AllOtherLocs %>% 
+  filter(NAME == "BERNARDO, NM US") %>% 
   mutate(DATE = as.Date(DATE, format = "%Y-%m-%d")) %>% 
   filter(DATE <= "2021-12-31") %>% 
   select(STATION, NAME, DATE, PRCP, TMAX) %>% 
   rename(TempPrecipStation = STATION, StationName = NAME, Date = DATE,
          Precip_mm = PRCP, Temp_C = TMAX) %>% 
-  complete(Date = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>% 
+  complete(Date = seq.Date(as.Date("2010-01-01"), as.Date("2021-12-31"), by = "day")) %>% 
+  mutate(Precip_mm = ifelse(is.na(Precip_mm), mean(Precip_mm, na.rm = T), Precip_mm),
+         Temp_C = na.approx(Temp_C, na.rm = F)) %>% 
   filter(Date >= "2010-01-01") %>% 
-  select(Precip_mm, Temp_C)
+  group_by(year(Date)) %>% 
+  mutate(PrecipCum_mm = cumsum(Precip_mm), TempCum_C = cumsum(Temp_C)) %>% 
+  ungroup() %>% 
+  select(Precip_mm, Temp_C, PrecipCum_mm, TempCum_C)
+
 
 #Diversions (At Isleta)
-Diversions_R2 <- dat_diversions %>% 
-  filter(DivName != "SNA02") %>% 
-  mutate(Date = as.Date(Date, format = "%Y-%m-%d"), Month = month(Date)) %>% 
-  group_by(Date) %>% 
-  mutate(TempDiv = round(sum(MnDischarge_cfs, na.rm = T),2)) %>% 
-  mutate(Diversion_cfs = case_when(Month == 1 | Month == 2 | Month == 12 ~ 0,
-                                               TRUE ~ TempDiv)) %>% 
-  ungroup() %>% 
-  arrange(Date) %>% 
-  filter(Date >= "2010-01-01") %>% 
-  distinct(Date, Diversion_cfs) %>% 
-  arrange(Date) %>% 
-  select(Diversion_cfs)
+Diversions_R2 <- Diversions_R1
 
 #Returns river reach 2 (LP1DR, BELDR, LP2DR, FD3WW, STYWW, SABDR) one wasteway not gaged in this reach (NBAWW)
 Returns_R2 <- dat_returns %>% 
@@ -193,7 +200,10 @@ Returns_R2 <- dat_returns %>%
   arrange(Date) %>% 
   distinct(Date, Returns_cfs) %>% 
   filter(Date >= "2010-01-01") %>% arrange(Date) %>% 
-  select(Returns_cfs)
+  group_by(year(Date)) %>% 
+  mutate(ReturnsCum_cfs = cumsum(Returns_cfs)) %>% 
+  ungroup() %>% 
+  select(Returns_cfs, ReturnsCum_cfs)
 
 #Returns (gage called At State Hwy 346 near Bosque Farms)
 Discharge_R2 <- dat_discharge %>% 
@@ -205,7 +215,11 @@ Discharge_R2 <- dat_discharge %>%
   mutate(Discharge_cfs = mean(Discharge_cfs)) %>% 
   ungroup() %>% 
   distinct(dateTime, Discharge_cfs) %>% 
-  select(Discharge_cfs)
+  group_by(year(dateTime)) %>% 
+  mutate(DischargeCum_cfs = cumsum(Discharge_cfs)) %>% 
+  ungroup() %>% 
+  select(Discharge_cfs, DischargeCum_cfs)
+
 
 #R2 combine all data frames 
 Reach2 <- as.data.frame(cbind(Ext_ExtChng_R2, MileDays_R2, TempPrecip_R2, 
@@ -227,30 +241,27 @@ Ext_ExtChng_R3 <- dat_drying %>%
          ExtentChng = Extent - lag(Extent, default = Extent[1]))
 
 #Mile Days
-MileDays_R3  <- dat_drying %>% 
-  select(!X) %>%
+MileDays_R3 <- dat_drying %>% 
+  select(!X) %>% 
   mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>% 
   filter(between(RMTenthDry, 74, 130)) %>% 
-  arrange(RMTenthDry) %>% 
-  group_by(RMTenthDry, grp = with(rle(DryRM), rep(seq_along(lengths), lengths))) %>% 
-  mutate(Counter = 1:n()) %>% 
-  mutate(Counter = as.numeric(Counter)) %>% 
+  mutate(DryRM2 = case_when(DryRM == 0 ~ 1,
+                            TRUE ~ 0)) %>% 
+  arrange(Date, RMTenthDry) %>% 
+  group_by(year(Date)) %>% 
+  mutate(MD = cumsum(DryRM2)/10) %>% 
   ungroup() %>% 
-  mutate(Counter2 = case_when(DryRM == 1 ~ 0,
-                              TRUE ~ Counter)) %>% 
-  select(-grp, - Counter) %>% 
   group_by(Date) %>% 
-  summarise(sum(Counter2)) %>% 
-  rename(MileDays = "sum(Counter2)") %>% 
-  arrange(Date) %>% 
-  filter(Date >= "2010-01-01") %>% 
-  select(-Date)
+  mutate(MileDays = max(MD)) %>% 
+  distinct(Date, MileDays) %>% 
+  ungroup() %>% 
+  select(!Date)
 
 #Climate covariates 
 
 #Need to average stations
-Temp_R3 <- dat_TempPrecip_Reach3 %>% 
-  filter(STATION == "USW00003048" | STATION == "USC00298387" | STATION == "USC00291138") %>% 
+Temp_R3 <- dat_TempPrecip_AllOtherLocs %>% 
+  filter(NAME != "BERNARDO, NM US") %>% 
   mutate(DATE = as.Date(DATE, format = "%Y-%m-%d")) %>% 
   filter(DATE <= "2021-12-31") %>% 
   select(STATION, NAME, DATE, TMAX) %>% 
@@ -259,12 +270,19 @@ Temp_R3 <- dat_TempPrecip_Reach3 %>%
   distinct(DATE, Temp_C) %>% 
   dplyr::rename(Date = DATE) %>% 
   ungroup() %>% 
-  complete(Date = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>% 
+  complete(Date = seq.Date(as.Date("2010-01-01"), as.Date("2021-12-31"), by = "day")) %>% 
+  arrange(Date) %>% 
+  mutate(Temp_C = na.approx(Temp_C, na.rm = F)) %>% 
+  group_by(year(Date)) %>% 
+  mutate(TempCum_C = cumsum(Temp_C)) %>% 
+  ungroup() %>% 
+  select(!"year(Date)") %>% 
   filter(Date >= "2010-01-01") %>% arrange(Date) %>% select(!Date)
 
+
 #Need to sum stations
-Precip_R3 <- dat_TempPrecip_Reach3 %>% 
-  filter(STATION == "USW00003048" | STATION == "USC00298387" | STATION == "USC00291138") %>% 
+Precip_R3 <- dat_TempPrecip_AllOtherLocs %>% 
+  filter(NAME != "BOSQUE DEL APACHE, NM US") %>% 
   mutate(DATE = as.Date(DATE, format = "%Y-%m-%d")) %>% 
   filter(DATE <= "2021-12-31") %>% 
   select(STATION, NAME, DATE, PRCP) %>% 
@@ -274,7 +292,12 @@ Precip_R3 <- dat_TempPrecip_Reach3 %>%
   dplyr::rename(Date = DATE) %>% 
   ungroup() %>% 
   complete(Date = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>% 
-  filter(Date >= "2010-01-01") %>%  arrange(Date) %>% select(!Date)
+  mutate(Precip_mm = ifelse(is.na(Precip_mm), mean(Precip_mm, na.rm = T), Precip_mm)) %>%
+  group_by(year(Date)) %>% 
+  mutate(PrecipCum_mm = cumsum(Precip_mm)) %>% 
+  ungroup() %>% 
+  filter(Date >= "2010-01-01") %>%  arrange(Date) %>% 
+  select(Precip_mm, PrecipCum_mm)
 
 TempPrecip_R3 <- cbind(Precip_R3, Temp_R3)
 
@@ -290,9 +313,12 @@ Diversions_R3 <- dat_diversions %>%
   arrange(Date) %>% 
   distinct(Date, Diversion_cfs) %>% 
   filter(Date >= "2010-01-01") %>% arrange(Date) %>% 
-  select(Diversion_cfs)
+  group_by(year(Date)) %>% 
+  mutate(DiversionCum_cfs = cumsum(Diversion_cfs)) %>% 
+  ungroup() %>% 
+  select(Diversion_cfs,DiversionCum_cfs)
 
-#Returns river reach 3 (LSJDR, SFRDR, NCPPS, NBYPS) three are not gaged in this reach (NBAWW)
+#Returns river reach 3 (LSJDR, SFRDR, NCPPS, NBYPS) three are not gaged in this reach (LJYDR, 9 Mile, NCPDV)
 Returns_R3 <- dat_returns %>% 
   filter(DivName == "LSJDR" | DivName == "SFRDR" |DivName == "NCPPS" |
            DivName == "NBYPS") %>% 
@@ -305,7 +331,11 @@ Returns_R3 <- dat_returns %>%
   arrange(Date) %>% 
   distinct(Date, Returns_cfs) %>% 
   filter(Date >= "2010-01-01") %>% arrange(Date) %>% 
-  select(Returns_cfs)
+  group_by(year(Date)) %>% 
+  mutate(ReturnsCum_cfs = cumsum(Returns_cfs)) %>% 
+  ungroup() %>% 
+  select(Returns_cfs, ReturnsCum_cfs)
+
 
 #There are 3 or possible 4 that I could use and I haven't decided....
 Discharge_R3 <- dat_discharge %>% 
@@ -318,8 +348,11 @@ Discharge_R3 <- dat_discharge %>%
   mutate(Discharge_cfs = mean(Discharge_cfs)) %>% 
   ungroup() %>% 
   distinct(dateTime, Discharge_cfs) %>% 
-  select(Discharge_cfs)
-
+  group_by(year(dateTime)) %>% 
+  mutate(DischargeCum_cfs = cumsum(Discharge_cfs)) %>% 
+  ungroup() %>% 
+  select(Discharge_cfs, DischargeCum_cfs)
+  
 #R3 combine all data frames 
 Reach3 <- as.data.frame(cbind(Ext_ExtChng_R3, MileDays_R3, TempPrecip_R3, 
                               Discharge_R3, Diversions_R3, Returns_R3)) %>% 
