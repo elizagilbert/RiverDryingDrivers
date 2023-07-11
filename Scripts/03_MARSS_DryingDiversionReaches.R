@@ -15,25 +15,13 @@ dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T)
 
 #read covariates ####
 #already zscored
-c_3states_dry <- as.matrix(read.csv("Data/Processed/MARSS_Covariates/Pred_Dry_3states.csv") %>% column_to_rownames(var = "X"))
-c_3states_cum_dry <- as.matrix(read.csv("Data/Processed/MARSS_Covariates/PredCum_Dry_3states.csv") %>% column_to_rownames(var = "X"))
-dim(c_3states_dry) # 15 (5 predictors by 3 reaches) and 4383 days if entire year included
-
-c_2states_dry <- as.matrix(read.csv("Data/Processed/MARSS_Covariates/Pred_Dry_2states.csv") %>% column_to_rownames(var = "X"))
-c_2states_cum_dry <- as.matrix(read.csv("Data/Processed/MARSS_Covariates/PredCum_Dry_2states.csv") %>% column_to_rownames(var = "X"))
-dim(c_2states_dry) # 10 (5 predictors by 2 reaches) and 4383 days if entire year included
-
-c_1state_dry <- as.matrix(read.csv("Data/Processed/MARSS_Covariates/Pred_Dry_1state.csv") %>% column_to_rownames(var = "X"))
-c_1state_cum_dry <- as.matrix(read.csv("Data/Processed/MARSS_Covariates/PredCum_Dry_1state.csv") %>% column_to_rownames(var = "X"))
-dim(c_1state_dry) # 5 predictors and 4383 days if entire year included
-
-c_2states_div <- as.matrix(read.csv("Data/Processed/MARSS_Covariates/Pred_Div_2states.csv") %>% column_to_rownames(var = "X"))
-c_2states_cum_div <- as.matrix(read.csv("Data/Processed/MARSS_Covariates/PredCum_Div_2states.csv") %>% column_to_rownames(var = "X"))
-dim(c_2states_div) # 10 (5 predictors by 2 reaches) and 4383 days if entire year included
-
-c_1state_div <- as.matrix(read.csv("Data/Processed/MARSS_Covariates/Pred_Dry_1state.csv") %>% column_to_rownames(var = "X"))
-c_1state_cum_div <- as.matrix(read.csv("Data/Processed/MARSS_Covariates/PredCum_Div_1state.csv") %>% column_to_rownames(var = "X"))
-dim(c_1state_div) # 5 predictors and 4383 days if entire year included
+cov_file_list <- list.files("Data/Processed/MARSS_Covariates/", full.names = T, pattern = "*.csv")
+all_cov_data <- lapply(cov_file_list, function(file){
+  df <- read.csv(file)
+})
+names(all_cov_data) <- sub('\\.csv', '', basename(cov_file_list))
+all_cov_data <- lapply(all_cov_data, function(x) column_to_rownames(x, var = "X"))
+all_cov_matrix <- lapply(all_cov_data, function(x) as.matrix(x))
 
 #response transform and zscore ####
 
@@ -104,33 +92,33 @@ plot(Extent_DryR_ts[1,])
 #C matrices ####
 
 #3 states
-C_3dis <- matrix(list(0),3,3); diag(C_3dis) <- "dis"
-C_3div <- matrix(list(0),3,3); diag(C_3div) <- "div"
-C_3precip <- matrix(list(0),3,3); diag(C_3precip) <- "precip"
-C_3ret <- matrix(list(0),3,3); diag(C_3ret) <- "ret"
-C_3temp <- matrix(list(0),3,3); diag(C_3temp) <- "temp"
-C_3states <- cbind(C_3dis, C_3div,C_3precip, C_3ret, C_3temp)
-C_3states
+C_3states <- matrix(0,3,15)  
+diag3 <- function(x) {
+  C_3dis <- matrix(list(0),3,3); diag(C_3dis) <- "dis"
+  C_3div <- matrix(list(0),3,3); diag(C_3div) <- "div"
+  C_3precip <- matrix(list(0),3,3); diag(C_3precip) <- "precip"
+  C_3ret <- matrix(list(0),3,3); diag(C_3ret) <- "ret"
+  C_3temp <- matrix(list(0),3,3); diag(C_3temp) <- "temp"
+  C_3states <- cbind(C_3dis, C_3div,C_3precip, C_3ret, C_3temp)
+  C_3states
+}
+C_3states <- diag3(C_3states)
 
 #2 states
-C_2dis <- matrix(list(0),2,2); diag(C_2dis) <- "dis"
-C_2div <- matrix(list(0),2,2); diag(C_2div) <- "div"
-C_2precip <- matrix(list(0),2,2); diag(C_2precip) <- "precip"
-C_2ret <- matrix(list(0),2,2); diag(C_2ret) <- "ret"
-C_2temp <- matrix(list(0),2,2); diag(C_2temp) <- "temp"
-C_2states <- cbind(C_2dis, C_2div, C_2precip, C_2ret, C_2temp)
-C_2states
+C_2states <- matrix(0,2,10)  
+diag2 <- function(x) {
+  C_2dis <- matrix(list(0),2,2); diag(C_2dis) <- "dis"
+  C_2div <- matrix(list(0),2,2); diag(C_2div) <- "div"
+  C_2precip <- matrix(list(0),2,2); diag(C_2precip) <- "precip"
+  C_2ret <- matrix(list(0),2,2); diag(C_2ret) <- "ret"
+  C_2temp <- matrix(list(0),2,2); diag(C_2temp) <- "temp"
+  C_2states <- cbind(C_2dis, C_2div,C_2precip, C_2ret, C_2temp)
+  C_2states
+}
+C_2states <- diag2(C_2states)
 
 #1 state
-C_1dis <- matrix(list(0),1,1); diag(C_1dis) <- "dis"
-C_1div <- matrix(list(0),1,1); diag(C_1div) <- "div"
-C_1precip <- matrix(list(0),1,1); diag(C_1precip) <- "precip"
-C_1ret <- matrix(list(0),1,1); diag(C_1ret) <- "ret"
-C_1temp <- matrix(list(0),1,1); diag(C_1temp) <- "temp"
-C_1state <- cbind(C_1dis, C_1div, C_1precip, C_1ret, C_1temp)
-C_1state
-
-
+C_1state <- matrix(list(c("dis", "div", "precip", "ret", "temp")))
 
 #Z for 2 drying states####
 Z_2states <- matrix(0,3,2); Z_2states[1,1] <- 1;Z_2states[2,1] <- 1; Z_2states[3,2] <- 1
