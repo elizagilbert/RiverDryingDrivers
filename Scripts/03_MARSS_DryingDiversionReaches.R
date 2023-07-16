@@ -82,7 +82,7 @@ MileDays_DivR <- as.matrix(dat_DivR %>%
                              column_to_rownames(var = "Reach"))
 
 #check z-scoring
-apply(c_3states_cum_dry, 1, var)
+apply(all_cov_matrix$Pred_Div_1state, 1, var)
 
 #creating a time series of first predictive variable
 Extent_DryR_ts <- ts(Extent_DryR, frequency = 365)
@@ -103,6 +103,7 @@ diag3 <- function(x) {
   C_3states
 }
 C_3states <- diag3(C_3states)
+C_3states
 
 #2 states
 C_2states <- matrix(0,2,10)  
@@ -116,9 +117,21 @@ diag2 <- function(x) {
   C_2states
 }
 C_2states <- diag2(C_2states)
+C_2states
 
 #1 state
-C_1state <- matrix(list(c("dis", "div", "precip", "ret", "temp")))
+C_1state <- matrix(0,1,5)  
+diag2 <- function(x) {
+  C_1dis <- matrix(list(0),1,1); diag(C_1dis) <- "dis"
+  C_1div <- matrix(list(0),1,1); diag(C_1div) <- "div"
+  C_1precip <- matrix(list(0),1,1); diag(C_1precip) <- "precip"
+  C_1ret <- matrix(list(0),1,1); diag(C_1ret) <- "ret"
+  C_1temp <- matrix(list(0),1,1); diag(C_1temp) <- "temp"
+  C_1state <- cbind(C_1dis, C_1div,C_1precip, C_1ret, C_1temp)
+  C_1state
+}
+C_1state <- diag2(C_1state)
+C_1state
 
 #Z for 2 drying states####
 Z_2states <- matrix(0,3,2); Z_2states[1,1] <- 1;Z_2states[2,1] <- 1; Z_2states[3,2] <- 1
@@ -128,13 +141,13 @@ Z_2states
 #3 states
   #3 dry
 moddry_3states_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and equal",
-                        c=c_3states_dry, C=C_3states, Z = "identity", A = matrix(0,3,1), 
+                        c=all_cov_matrix$Pred_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                         R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddry_3states_qdiauneq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and unequal",
-                           c=c_3states_dry, C=C_3states, Z = "identity", A = matrix(0,3,1), 
+                           c=all_cov_matrix$Pred_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                            R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddry_3states_qdiavarcov <- list(B = "identity", U = matrix(0,3,1), Q = "equalvarcov",
-                           c=c_3states_dry, C=C_3states, Z = "identity", A = matrix(0,3,1), 
+                           c=all_cov_matrix$Pred_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                            R = "diagonal and equal", x0 = "equal", tinitx = 0)
   #3 dry null
 moddry_null_3states_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and equal",
@@ -148,13 +161,13 @@ moddry_null_3states_qdiavarcov <- list(B = "identity", U = matrix(0,3,1), Q = "e
                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
   #3 dry cumulative
 moddry_3statescum_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and equal",
-                              c=c_3states_cum_dry, C=C_3states, Z = "identity", A = matrix(0,3,1), 
+                              c=all_cov_matrix$PredCum_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddry_3statescum_qdiauneq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and unequal",
-                                c=c_3states_cum_dry, C=C_3states, Z = "identity", A = matrix(0,3,1), 
+                                c=all_cov_matrix$PredCum_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                                 R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddry_3statescum_qdiavarcov <- list(B = "identity", U = matrix(0,3,1), Q = "equalvarcov",
-                                  c=c_3states_cum_dry, C=C_3states, Z = "identity", A = matrix(0,3,1), 
+                                  c=all_cov_matrix$PredCum_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #3 dry cumulative null
@@ -170,13 +183,13 @@ moddry_null_3statescum_qdiavarcov <- list(B = "identity", U = matrix(0,3,1), Q =
 #2 states
   #2 dry
 moddry_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
-                              c=c_2states_dry, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
+                              c=all_cov_matrix$Pred_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddry_2states_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                c=c_2states_dry, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
+                                c=all_cov_matrix$Pred_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                                 R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddry_2states_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                  c=c_2states_dry, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
+                                  c=all_cov_matrix$Pred_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 dry null
@@ -192,13 +205,13 @@ moddry_null_2states_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "e
 
   #2 dry cum
 moddry_2statescum_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
-                              c=c_2states_cum_dry, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
+                              c=all_cov_matrix$PredCum_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddry_2statescum_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                c=c_2states_cum_dry, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
+                                c=all_cov_matrix$PredCum_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                                 R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddry_2statescum_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                  c=c_2states_cum_dry, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
+                                  c=all_cov_matrix$PredCum_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
   #2 dry cum null
 moddry_null_2statescum_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
@@ -213,13 +226,13 @@ moddry_null_2statescum_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q =
 
   #2 diversion
 moddiv_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
-                              c=c_2states_div, C=C_2states, Z = "identity", A = matrix(0,2,1), 
+                              c=all_cov_matrix$Pred_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddiv_2states_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                c=c_2states_div, C=C_2states, Z = "identity", A = matrix(0,2,1), 
+                                c=all_cov_matrix$Pred_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                                 R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddiv_2states_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                  c=c_2states_div, C=C_2states, Z = "identity", A = matrix(0,2,1), 
+                                  c=all_cov_matrix$Pred_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 diversion null
@@ -235,13 +248,13 @@ moddiv_null_2states_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "e
 
    #2 diversion cum
 moddiv_2statescum_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
-                              c=c_2states_cum_div, C=C_2states, Z = "identity", A = matrix(0,2,1), 
+                              c=all_cov_matrix$PredCum_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddiv_2statescum_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                c=c_2states_cum_div, C=C_2states, Z = "identity", A = matrix(0,2,1), 
+                                c=all_cov_matrix$PredCum_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                                 R = "diagonal and equal", x0 = "equal", tinitx = 0)
 moddiv_2statescum_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                  c=c_2states_cum_div, C=C_2states, Z = "identity", A = matrix(0,2,1), 
+                                  c=all_cov_matrix$PredCum_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 diversion cum null
@@ -258,7 +271,7 @@ moddiv_null_2statescum_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q =
 #1 state
   #1 dry
 moddry_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
-                    c=c_1state_dry, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
+                    c=all_cov_matrix$Pred_Dry_1state, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
                     R = "diagonal and equal", x0 = "equal", tinitx = 0)
   #1 dry null
 moddry_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
@@ -267,7 +280,7 @@ moddry_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagona
 
   #1 dry cum
 moddry_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
-                             c=c_1state_cum_dry, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
+                             c=all_cov_matrix$PredCum_Dry_1state, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
                              R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #1 dry cum null
@@ -277,7 +290,7 @@ moddry_null_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diag
 
   #1 diversion
 moddiv_1state_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
-                      c=c_1state_div, C=C_1state, Z = matrix(1,2,1), A = matrix(0,2,1), 
+                      c=all_cov_matrix$Pred_Div_1state, C=C_1state, Z = matrix(1,2,1), A = matrix(0,2,1), 
                       R = "diagonal and equal", x0 = "equal", tinitx = 0)
   
   #1 diversion null
@@ -287,7 +300,7 @@ moddiv_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal an
 
   #1 diversion cum
 moddiv_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
-                            c=c_1state_cum_div, C=C_1state, Z = matrix(1,2,1), A = matrix(0,2,1), 
+                            c=all_cov_matrix$PredCum_Div_1state, C=C_1state, Z = matrix(1,2,1), A = matrix(0,2,1), 
                             R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #1 diversion cum null
@@ -326,8 +339,8 @@ Extent_null_2states_div_diavarcov <- MARSS(Extent_DivR, model = moddiv_null_2sta
 Extent_1state_dry_diaeq <- MARSS(Extent_DryR, model = moddry_1state_qdiaeq)
 Extent_null_1state_dry_diaeq <- MARSS(Extent_DryR, model = moddry_null_1state_qdiaeq)
 
-Extent_1state_div_diaeq <- MARSS(Extent_DivR, model = moddiv_1state_diaeq)
-Extent_null_1state_div_diaeq <- MARSS(Extent_DivR, model = moddiv_null_1state_diaeq)
+Extent_1state_div_diaeq <- MARSS(Extent_DivR, model = moddiv_1state_qdiaeq)
+Extent_null_1state_div_diaeq <- MARSS(Extent_DivR, model = moddiv_null_1state_qdiaeq)
 
 #model fits Extent Change####
 
@@ -347,12 +360,10 @@ ExtentChng_2states_div_diavarcov <- MARSS(ExtentChng_DivR, model = moddiv_2state
 
 #1 state Extent change
 ExtentChng_1state_dry_qdiaeq <- MARSS(ExtentChng_DryR, model = moddry_1state_qdiaeq)
-ExtentChng_1state_dry_diauneq <- MARSS(ExtentChng_DryR, model = moddry_1state_qdiauneq)
-ExtentChng_1state_dry_diavarcov <- MARSS(ExtentChng_DryR, model = moddry_1state_qdiavarcov)
+ExtentChng_null_1state_dry_diaeq <- MARSS(ExtentChng_DryR, model = moddry_null_1state_qdiaeq)
 
 ExtentChng_1state_div_qdiaeq <- MARSS(ExtentChng_DivR, model = moddiv_1state_qdiaeq)
-ExtentChng_1state_div_diauneq <- MARSS(ExtentChng_DivR, model = moddiv_1state_qdiauneq)
-ExtentChng_1state_div_diavarcov <- MARSS(ExtentChng_DivR, model = moddiv_1state_qdiavarcov)
+ExtentChng_null_1state_div_diaeq <- MARSS(ExtentChng_DivR, model = moddiv_null_1state_qdiaeq)
 
 #model fits Daily Dry ####
 
