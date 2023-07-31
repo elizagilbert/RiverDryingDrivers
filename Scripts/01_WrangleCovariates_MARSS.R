@@ -10,8 +10,17 @@ library(zoo)
 
 
 #data ####
-dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T)
-dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T)
+dat_DryR0 <- read.csv("Data/Processed/DryingSubreachData.csv", header = T) 
+dat_DivR0 <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T)
+
+#use when reducing months 4-10
+dat_DryR <- dat_DryR0 %>% 
+  mutate(Date = as.Date(Date, format = "%Y-%m-%d" )) %>% 
+  filter(between(month(Date), 4, 10))
+
+dat_DivR <- dat_DivR0 %>% 
+  mutate(Date = as.Date(Date, format = "%Y-%m-%d" )) %>% 
+  filter(between(month(Date), 4, 10))
 
 #3 states drying ####
 
@@ -43,8 +52,12 @@ PredCum_Dry_3states <- dat_DryR %>%
   pivot_wider(names_from = Date, values_from = zValues) %>% 
   column_to_rownames(var = "NewRowName")
 
-write.csv(Pred_Dry_3states, "Data/Processed/MARSS_Covariates/Pred_Dry_3states.csv", row.names = T)
-write.csv(PredCum_Dry_3states, "Data/Processed/MARSS_Covariates/PredCum_Dry_3states.csv", row.names = T)
+#write.csv(Pred_Dry_3states, "Data/Processed/MARSS_Covariates/Pred_Dry_3statesReduced.csv", row.names = T)
+#write.csv(PredCum_Dry_3states, "Data/Processed/MARSS_Covariates/PredCum_Dry_3statesReduced.csv", row.names = T)
+
+#reduced to months 4 - 10
+# write.csv(Pred_Dry_3states, "Data/Processed/MARSS_Covariates/Reduced/Pred_Dry_3statesReduced.csv", row.names = T)
+# write.csv(PredCum_Dry_3states, "Data/Processed/MARSS_Covariates/Reduced/PredCum_Dry_3statesReduced.csv", row.names = T)
 
 #check z-scoring
 apply(Pred_Dry_3states, 1, var)
@@ -125,8 +138,11 @@ PredCum_Dry_2states <- tempcum2 %>%
   pivot_wider(names_from = Date, values_from = zValues) %>% 
   column_to_rownames(var = "NewRowName")
 
-write.csv(Pred_Dry_2states, "Data/Processed/MARSS_Covariates/Pred_Dry_2states.csv", row.names = T)
-write.csv(PredCum_Dry_2states, "Data/Processed/MARSS_Covariates/PredCum_Dry_2states.csv", row.names = T)
+#write.csv(Pred_Dry_2states, "Data/Processed/MARSS_Covariates/Pred_Dry_2states.csv", row.names = T)
+#write.csv(PredCum_Dry_2states, "Data/Processed/MARSS_Covariates/PredCum_Dry_2states.csv", row.names = T)
+
+#write.csv(Pred_Dry_2states, "Data/Processed/MARSS_Covariates/Reduced/Pred_Dry_2statesReduced.csv", row.names = T)
+#write.csv(PredCum_Dry_2states, "Data/Processed/MARSS_Covariates/Reduced/PredCum_Dry_2statesReduced.csv", row.names = T)
 
 #check z-scoring
 apply(PredCum_Dry_2states, 1, var)
@@ -194,8 +210,11 @@ PredCum_Dry_1state <- tCum1 %>%
   pivot_wider(names_from = Date, values_from = zValues) %>% 
   column_to_rownames(var = "NewRowName")
 
-write.csv(Pred_Dry_1state, "Data/Processed/MARSS_Covariates/Pred_Dry_1state.csv", row.names = T)
-write.csv(PredCum_Dry_1state, "Data/Processed/MARSS_Covariates/PredCum_Dry_1state.csv", row.names = T)
+# write.csv(Pred_Dry_1state, "Data/Processed/MARSS_Covariates/Pred_Dry_1state.csv", row.names = T)
+# write.csv(PredCum_Dry_1state, "Data/Processed/MARSS_Covariates/PredCum_Dry_1state.csv", row.names = T)
+# 
+# write.csv(Pred_Dry_1state, "Data/Processed/MARSS_Covariates/Reduced/Pred_Dry_1state.csv", row.names = T)
+# write.csv(PredCum_Dry_1state, "Data/Processed/MARSS_Covariates/Reduced/PredCum_Dry_1state.csv", row.names = T)
 
 #check z-scoring
 apply(Pred_Dry_1state, 1, var)
@@ -232,8 +251,11 @@ PredCum_Div_2states <- dat_DivR %>%
   column_to_rownames(var = "NewRowName")
 
 
-write.csv(Pred_Div_2states, "Data/Processed/MARSS_Covariates/Pred_Div_2states.csv", row.names = T)
-write.csv(PredCum_Div_2states, "Data/Processed/MARSS_Covariates/PredCum_Div_2states.csv", row.names = T)
+# write.csv(Pred_Div_2states, "Data/Processed/MARSS_Covariates/Pred_Div_2states.csv", row.names = T)
+# write.csv(PredCum_Div_2states, "Data/Processed/MARSS_Covariates/PredCum_Div_2states.csv", row.names = T)
+# 
+# write.csv(Pred_Div_2states, "Data/Processed/MARSS_Covariates/Reduced/Pred_Div_2states.csv", row.names = T)
+# write.csv(PredCum_Div_2states, "Data/Processed/MARSS_Covariates/Reduced/PredCum_Div_2states.csv", row.names = T)
 
 #check z-scoring
 apply(Pred_Div_2states, 1, var)
@@ -291,7 +313,9 @@ PredCum_Div_1state <- tCum2 %>%
   pivot_wider(names_from = Date, values_from = zValues) %>% 
   column_to_rownames(var = "NewRowName")
 
-write.csv(Pred_Div_1state, "Data/Processed/MARSS_Covariates/Pred_Div_1state.csv", row.names = T)
-write.csv(PredCum_Div_1state, "Data/Processed/MARSS_Covariates/PredCum_Div_1state.csv", row.names = T)
-
+# write.csv(Pred_Div_1state, "Data/Processed/MARSS_Covariates/Pred_Div_1state.csv", row.names = T)
+# write.csv(PredCum_Div_1state, "Data/Processed/MARSS_Covariates/PredCum_Div_1state.csv", row.names = T)
+# 
+# write.csv(Pred_Div_1state, "Data/Processed/MARSS_Covariates/Reduced/Pred_Div_1state.csv", row.names = T)
+# write.csv(PredCum_Div_1state, "Data/Processed/MARSS_Covariates/Reduced/PredCum_Div_1state.csv", row.names = T)
 apply(Pred_Div_1state, 1, var)

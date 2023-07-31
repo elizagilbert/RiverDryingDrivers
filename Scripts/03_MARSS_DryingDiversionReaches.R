@@ -10,12 +10,18 @@ library(zoo)
 library(beepr)
 
 #read predictor data ####
-dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T)
-dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T)
+#already zscored
+dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T) %>% 
+  mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>% 
+  filter(between(month(Date), 4,10))
+dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T)%>% 
+  mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>% 
+  filter(between(month(Date), 4,10))
 
 #read covariates ####
 #already zscored
-cov_file_list <- list.files("Data/Processed/MARSS_Covariates/", full.names = T, pattern = "*.csv")
+#reduced is reduced to months 4-10
+cov_file_list <- list.files("Data/Processed/MARSS_Covariates/Reduced", full.names = T, pattern = "*.csv")
 all_cov_data <- lapply(cov_file_list, function(file){
   df <- read.csv(file)
 })
@@ -29,54 +35,58 @@ all_cov_matrix <- lapply(all_cov_data, function(x) as.matrix(x))
 #Can add absolute value of the most negative number to all change extent so
 #the most negative number become 0 and shifts everything else up
 
-#DO I NEED TO REPLACE ZEROS WITH NA AS DONE IN MARSS TUTORIAL
-
-#zscore response variables#
+#zscore response variables and replace zeros with NA#
  #drying reaches
 Extent_DryR <- as.matrix(dat_DryR %>% 
   select(Date, Extent, Reach) %>% 
+  mutate_at('Extent', ~na_if(.,0)) %>%
   group_by(Reach) %>% 
-  mutate(zExtent = (Extent - mean(Extent))/ sd(Extent)) %>% 
+  mutate(zExtent = (Extent - mean(Extent, na.rm = TRUE))/ sd(Extent, na.rm = TRUE)) %>% 
   select(!Extent) %>% 
   pivot_wider(names_from = Date, values_from = zExtent) %>% 
   column_to_rownames(var = "Reach"))
 
 ExtentChng_DryR <- as.matrix(dat_DryR %>% 
   select(Date, ExtentChng, Reach) %>% 
+  mutate_at('ExtentChng', ~na_if(.,0)) %>%
   group_by(Reach) %>% 
-  mutate(zExtentChng = (ExtentChng - mean(ExtentChng))/ sd(ExtentChng)) %>% 
+  mutate(zExtentChng = (ExtentChng - mean(ExtentChng, na.rm = TRUE))/ sd(ExtentChng, na.rm = TRUE)) %>% 
   select(!ExtentChng) %>% 
   pivot_wider(names_from = Date, values_from = zExtentChng) %>% 
   column_to_rownames(var = "Reach"))
 
 MileDays_DryR <- as.matrix(dat_DryR %>% 
                              select(Date, MileDays, Reach) %>% 
+                             mutate_at('MileDays', ~na_if(.,0)) %>% 
                              group_by(Reach) %>% 
-                             mutate(zMileDays = (MileDays - mean(MileDays))/ sd(MileDays)) %>% 
+                             mutate(zMileDays = (MileDays - mean(MileDays, na.rm = TRUE))/ sd(MileDays, na.rm = TRUE)) %>% 
                              select(!MileDays) %>% 
                              pivot_wider(names_from = Date, values_from = zMileDays) %>% 
                              column_to_rownames(var = "Reach"))
   #diversion reaches
 Extent_DivR <- as.matrix(dat_DivR %>% 
                            select(Date, Extent, Reach) %>% 
+                           mutate_at('Extent', ~na_if(.,0)) %>%
                            group_by(Reach) %>% 
-                           mutate(zExtent = (Extent - mean(Extent))/ sd(Extent)) %>% 
+                           mutate(zExtent = (Extent - mean(Extent, na.rm = TRUE))/ sd(Extent, na.rm = TRUE)) %>% 
                            select(!Extent) %>% 
                            pivot_wider(names_from = Date, values_from = zExtent) %>% 
                            column_to_rownames(var = "Reach"))
 
 ExtentChng_DivR <- as.matrix(dat_DivR %>% 
                                select(Date, ExtentChng, Reach) %>% 
+                               mutate_at('ExtentChng', ~na_if(.,0)) %>% 
                                group_by(Reach) %>% 
-                               mutate(zExtentChng = (ExtentChng - mean(ExtentChng))/ sd(ExtentChng)) %>% 
+                               mutate(zExtentChng = (ExtentChng - mean(ExtentChng, na.rm = TRUE))/ sd(ExtentChng, na.rm = TRUE)) %>% 
                                select(!ExtentChng) %>% 
                                pivot_wider(names_from = Date, values_from = zExtentChng) %>% 
                                column_to_rownames(var = "Reach"))
 
 MileDays_DivR <- as.matrix(dat_DivR %>% 
                              select(Date, MileDays, Reach) %>% 
+                             mutate_at('MileDays', ~na_if(.,0)) %>% 
                              group_by(Reach) %>% 
-                             mutate(zMileDays = (MileDays - mean(MileDays))/ sd(MileDays)) %>% 
+                             mutate(zMileDays = (MileDays - mean(MileDays, na.rm = TRUE))/ sd(MileDays, na.rm = TRUE)) %>% 
                              select(!MileDays) %>% 
                              pivot_wider(names_from = Date, values_from = zMileDays) %>% 
                              column_to_rownames(var = "Reach"))
@@ -159,7 +169,8 @@ moddry_null_3states_qdiauneq <- list(B = "identity", U = matrix(0,3,1), Q = "dia
 moddry_null_3states_qdiavarcov <- list(B = "identity", U = matrix(0,3,1), Q = "equalvarcov",
                                   Z = "identity", A = matrix(0,3,1), 
                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
-  #3 dry cumulative
+  
+  #3 dry cumulative this is for daily dry variable
 moddry_3statescum_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and equal",
                               c=all_cov_matrix$PredCum_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
@@ -170,7 +181,7 @@ moddry_3statescum_qdiavarcov <- list(B = "identity", U = matrix(0,3,1), Q = "equ
                                   c=all_cov_matrix$PredCum_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
-  #3 dry cumulative null
+  #3 dry cumulative null this is for daily dry variable
 moddry_null_3statescum_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and equal",
                                  Z = "identity", A = matrix(0,3,1), 
                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
@@ -203,7 +214,7 @@ moddry_null_2states_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "e
                                   Z = Z_2states, A = matrix(0,3,1), 
                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
-  #2 dry cum
+  #2 dry cum this is for daily dry variable
 moddry_2statescum_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
                               c=all_cov_matrix$PredCum_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
@@ -213,7 +224,7 @@ moddry_2statescum_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diago
 moddry_2statescum_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
                                   c=all_cov_matrix$PredCum_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
-  #2 dry cum null
+  #2 dry cum null this is for daily dry variable
 moddry_null_2statescum_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
                                  Z = Z_2states, A = matrix(0,3,1), 
                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
@@ -310,9 +321,11 @@ moddiv_null_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal
 #model fits Extent Dry####
 
 #3 states Extent
+start.time <- Sys.time()
 Extent_3states_dry_qdiaeq <- MARSS(Extent_DryR, model = moddry_3states_qdiaeq)
 Extent_3states_dry_diauneq <- MARSS(Extent_DryR, model = moddry_3states_qdiauneq)
 Extent_3states_dry_diavarcov <- MARSS(Extent_DryR, model = moddry_3states_qdiavarcov)
+
 
 Extent_null_3states_dry_qdiaeq <- MARSS(Extent_DryR, model = moddry_null_3states_qdiaeq)
 Extent_null_3states_dry_diauneq <- MARSS(Extent_DryR, model = moddry_null_3states_qdiauneq)
@@ -339,31 +352,54 @@ Extent_null_2states_div_diavarcov <- MARSS(Extent_DivR, model = moddiv_null_2sta
 Extent_1state_dry_diaeq <- MARSS(Extent_DryR, model = moddry_1state_qdiaeq)
 Extent_null_1state_dry_diaeq <- MARSS(Extent_DryR, model = moddry_null_1state_qdiaeq)
 
+
 Extent_1state_div_diaeq <- MARSS(Extent_DivR, model = moddiv_1state_qdiaeq)
 Extent_null_1state_div_diaeq <- MARSS(Extent_DivR, model = moddiv_null_1state_qdiaeq)
-
-#model fits Extent Change####
+beep(3)
+end.time <- Sys.time()
+time.taken <- round(end.time - start.time,2)
+#model fits Extent Change MOST NOT CONVERGING####
 
 #3 state Extent change
 ExtentChng_3states_dry_qdiaeq <- MARSS(ExtentChng_DryR, model = moddry_3states_qdiaeq)
-ExtentChng_3states_dry_diauneq <- MARSS(ExtentChng_DryR, model = moddry_3states_qdiauneq)
+ExtentChng_3states_dry_diauneq <- MARSS(y = ExtentChng_DryR, model = moddry_null_3states_qdiauneq,
+                                        control = list(maxit= 5000, allow.degen=TRUE, trace=1, safe=TRUE), fit=TRUE)
 ExtentChng_3states_dry_diavarcov <- MARSS(ExtentChng_DryR, model = moddry_3states_qdiavarcov)
+
+ExtentChng_null_3states_dry_qdiaeq <- MARSS(ExtentChng_DryR, model = moddry_null_3states_qdiaeq)
+ExtentChng_null_3states_dry_diauneq <- MARSS(ExtentChng_DryR, model = moddry_null_3states_qdiauneq)
+ExtentChng_null_3states_dry_diavarcov <- MARSS(ExtentChng_DryR, model = moddry_null_3states_qdiavarcov)
+beep(3)
 
 #2 state Extent change
 ExtentChng_2states_dry_qdiaeq <- MARSS(ExtentChng_DryR, model = moddry_2states_qdiaeq)
 ExtentChng_2states_dry_diauneq <- MARSS(ExtentChng_DryR, model = moddry_2states_qdiauneq)
 ExtentChng_2states_dry_diavarcov <- MARSS(ExtentChng_DryR, model = moddry_2states_qdiavarcov)
 
+
+ExtentChng_null_2states_dry_qdiaeq <- MARSS(ExtentChng_DryR, model = moddry_null_2states_qdiaeq)
+ExtentChng_null_2states_dry_diauneq <- MARSS(ExtentChng_DryR, model = moddry_null_2states_qdiauneq)
+ExtentChng_null_2states_dry_diavarcov <- MARSS(ExtentChng_DryR, model = moddry_null_2states_qdiavarcov)
+beep(3)
+
 ExtentChng_2states_div_qdiaeq <- MARSS(ExtentChng_DivR, model = moddiv_2states_qdiaeq)
 ExtentChng_2states_div_diauneq <- MARSS(ExtentChng_DivR, model = moddiv_2states_qdiauneq)
 ExtentChng_2states_div_diavarcov <- MARSS(ExtentChng_DivR, model = moddiv_2states_qdiavarcov)
+
+
+ExtentChng_null_2states_div_qdiaeq <- MARSS(ExtentChng_DivR, model = moddiv_null_2states_qdiaeq)
+ExtentChng_null_2states_div_diauneq <- MARSS(ExtentChng_DivR, model = moddiv_null_2states_qdiauneq)
+ExtentChng_null_2states_div_diavarcov <- MARSS(ExtentChng_DivR, model = moddiv_null_2states_qdiavarcov)
+beep(3)
 
 #1 state Extent change
 ExtentChng_1state_dry_qdiaeq <- MARSS(ExtentChng_DryR, model = moddry_1state_qdiaeq)
 ExtentChng_null_1state_dry_diaeq <- MARSS(ExtentChng_DryR, model = moddry_null_1state_qdiaeq)
 
+
 ExtentChng_1state_div_qdiaeq <- MARSS(ExtentChng_DivR, model = moddiv_1state_qdiaeq)
 ExtentChng_null_1state_div_diaeq <- MARSS(ExtentChng_DivR, model = moddiv_null_1state_qdiaeq)
+beep(3)
 
 #model fits Daily Dry ####
 
@@ -376,6 +412,7 @@ MD_3states_dry_diavarcov <- MARSS(MileDays_DryR, model = moddry_3statescum_qdiav
 MD_null_3states_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_null_3statescum_qdiaeq)
 MD_null_3states_dry_diauneq <- MARSS(MileDays_DryR, model = moddry_null_3statescum_qdiauneq)
 MD_null_3states_dry_diavarcov <- MARSS(MileDays_DryR, model = moddry_null_3statescum_qdiavarcov)
+beep(3)
 
 #2 state Daily days
 MD_2states_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_2statescum_qdiaeq)
@@ -385,6 +422,7 @@ MD_2states_dry_diavarcov <- MARSS(MileDays_DryR, model = moddry_2statescum_qdiav
 MD_null_2states_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_null_2statescum_qdiaeq)
 MD_null_2states_dry_diauneq <- MARSS(MileDays_DryR, model = moddry_null_2statescum_qdiauneq)
 MD_null_2states_dry_diavarcov <- MARSS(MileDays_DryR, model = moddry_null_2statescum_qdiavarcov)
+beep(3)
 
 MD_2states_div_qdiaeq <- MARSS(MileDays_DivR, model = moddiv_2statescum_qdiaeq)
 MD_2states_div_diauneq <- MARSS(MileDays_DivR, model = moddiv_2statescum_qdiauneq)
@@ -393,21 +431,26 @@ MD_2states_div_diavarcov <- MARSS(MileDays_DivR, model = moddiv_2statescum_qdiav
 MD_null_2states_div_qdiaeq <- MARSS(MileDays_DivR, model = moddiv_null_2statescum_qdiaeq)
 MD_null_2states_div_diauneq <- MARSS(MileDays_DivR, model = moddiv_null_2statescum_qdiauneq)
 MD_null_2states_div_diavarcov <- MARSS(MileDays_DivR, model = moddiv_null_2statescum_qdiavarcov)
-
+beep(3)
 #1 state Daily days
 MD_1state_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_1statecum_qdiaeq)
 MD_null_1state_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_null_1statecum_qdiaeq)
 
 MD_1state_div_qdiaeq <- MARSS(MileDays_DivR, model = moddiv_1statecum_qdiaeq)
 MD_null_1state_div_qdiaeq <- MARSS(MileDays_DivR, model = moddiv_null_1statecum_qdiaeq)
-
+beep(3)
 #AIC ####
 #Extent
 Extent_AIC <- c(Extent_3states_dry_qdiaeq$AICc, Extent_3states_dry_diauneq$AICc, Extent_3states_dry_diavarcov$AICc,
-                 Extent_2states_dry_qdiaeq$AICc, Extent_2states_dry_diauneq$AICc, Extent_2states_dry_diavarcov$AICc,
-                 Extent_1state_dry_diaeq$AICc,
-                 Extent_2states_div_qdiaeq$AICc, Extent_2states_div_diauneq$AICc, Extent_2states_div_diavarcov$AICc,
-                 Extent_1state_div_diaeq$AICc)
+                Extent_null_3states_dry_qdiaeq$AICc, Extent_null_3states_dry_diauneq$AICc, Extent_null_3states_dry_diavarcov$AICc,
+                Extent_2states_dry_qdiaeq$AICc, Extent_2states_dry_diauneq$AICc, Extent_2states_dry_diavarcov$AICc,
+                Extent_null_2states_dry_qdiaeq$AICc, Extent_null_2states_dry_diauneq$AICc, Extent_null_2states_dry_diavarcov$AICc, 
+                Extent_1state_dry_diaeq$AICc,
+                Extent_null_1state_dry_diaeq$AICc,
+                Extent_2states_div_qdiaeq$AICc, Extent_2states_div_diauneq$AICc, Extent_2states_div_diavarcov$AICc,
+                Extent_null_2states_div_qdiaeq$AICc, Extent_null_2states_div_diauneq$AICc, Extent_null_2states_div_diavarcov$AICc,
+                Extent_1state_div_diaeq$AICc,
+                Extent_null_1state_div_diaeq$AICc)
 
 ExtDelAIC <- Extent_AIC - min(Extent_AIC)
 ExtRelLik <- exp(-0.5 * ExtDelAIC)
@@ -415,10 +458,15 @@ ExtAICWeight <- ExtRelLik/sum(ExtRelLik)
 ExtAICTable <- data.frame(AICc = Extent_AIC, delAIC = ExtDelAIC, relLike = ExtRelLik,
                           weight = ExtAICWeight)
 rownames(ExtAICTable) <- c("3dry_diaeq", "3dry_diuneq", "3dry_varcov",
+                           "3dry_null_diaeq", "3dry_null_diuneq", "3dry_null_varcov",
                            "2dry_diaeq", "2dry_diuneq", "2dry_varcov",
+                           "2dry_null_diaeq", "2dry_null_diuneq", "2dry_null_varcov",
                            "1dry",
+                           "1dry_null",
                            "2div_diaeq", "2div_diuneq", "2div_varcov",
-                           "1div")
+                           "2div_null_diaeq", "2div_null_diuneq", "2div_null_varcov",
+                           "1div",
+                           "1div_null")
 ExtAICTable %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC)
 
 #ExtentChng
@@ -433,3 +481,37 @@ MD_fits <- c(MD_2states_dry_qdiaeq$AICc, MD_2states_dry_diauneq$AICc, MD_2states
              MD_1state_dry_diaeq$AICc,
              MD_2states_div_qdiaeq$AICc, MD_2states_div_diauneq$AICc, MD_2states_div_diavarcov$AICc,
              MD_1state_div_diaeq$AICc)
+#Residuals
+autoplot.marssMLE(Extent_2states_dry_diavarcov)
+#Random code to use ####
+start.time <- Sys.time()
+ExtentChng_3states_dry_diauneq <- MARSS(y = ExtentChng_DryR, model = moddry_null_3states_qdiauneq,
+                                        control = list(maxit= 5000, allow.degen=TRUE, trace=1, safe=TRUE), fit=TRUE)
+
+start.time <- Sys.time()
+end.time <- Sys.time()
+time.taken <- round(end.time - start.time,2)
+#Response distribution plots #####
+dat_DryR %>% 
+  select(Date, Extent, Reach) %>% 
+  mutate_at('Extent', ~na_if(.,0)) %>%
+  group_by(Reach) %>% 
+  mutate(zExtent = (Extent - mean(Extent, na.rm = TRUE))/ sd(Extent, na.rm = TRUE)) %>% 
+  ggplot(aes(zExtent))+
+  geom_histogram()
+
+dat_DryR %>% 
+  select(Date, ExtentChng, Reach) %>% 
+  mutate_at('ExtentChng', ~na_if(.,0)) %>%
+  group_by(Reach) %>% 
+  mutate(zExtentChng = (ExtentChng - mean(ExtentChng, na.rm = TRUE))/ sd(ExtentChng, na.rm = TRUE)) %>% 
+  ggplot(aes(ExtentChng))+
+  geom_histogram()
+
+dat_DryR %>% 
+  select(Date, MileDays, Reach) %>% 
+  mutate_at('MileDays', ~na_if(.,0)) %>%
+  group_by(Reach) %>% 
+  mutate(zMileDays = (MileDays - mean(MileDays, na.rm = TRUE))/ sd(MileDays, na.rm = TRUE)) %>% 
+  ggplot(aes(MileDays))+
+  geom_histogram()
