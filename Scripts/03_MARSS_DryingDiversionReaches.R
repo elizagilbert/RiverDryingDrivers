@@ -34,6 +34,7 @@ all_cov_matrix <- lapply(all_cov_data, function(x) as.matrix(x))
 #BECAUSE THESE ARE COUNTS DO I NEED TO NATURAL LOG AND DEAL WITH NEGATIVE IN CHANGE?
 #Can add absolute value of the most negative number to all change extent so
 #the most negative number become 0 and shifts everything else up
+#changed all 0s to NA per Holmes manual - if I keep 0s the residuals look worse then with NAs
 
 #zscore response variables and replace zeros with NA#
  #drying reaches
@@ -469,6 +470,11 @@ rownames(ExtAICTable) <- c("3dry_diaeq", "3dry_diuneq", "3dry_varcov",
                            "1div_null")
 ExtAICTable %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC)
 
+#save top model
+saveRDS(Extent_2states_div_diauneq, "ModelOutput/TopExtentMod_2Div_Uneq.rds")
+mod <- readRDS("ModelOutput/TopExtentMod_2Div_Uneq.rds")
+summary(Extent_2states_div_diauneq)
+
 #ExtentChng
 ExtentChng_fits <- c(ExtentChng_3states_dry_qdiaeq$AICc, ExtentChng_3states_dry_diauneq$AICc, ExtentChng_3states_dry_diavarcov$AICc,
                  ExtentChng_2states_dry_qdiaeq$AICc, ExtentChng_2states_dry_diauneq$AICc, ExtentChng_2states_dry_diavarcov$AICc,
@@ -482,7 +488,7 @@ MD_fits <- c(MD_2states_dry_qdiaeq$AICc, MD_2states_dry_diauneq$AICc, MD_2states
              MD_2states_div_qdiaeq$AICc, MD_2states_div_diauneq$AICc, MD_2states_div_diavarcov$AICc,
              MD_1state_div_diaeq$AICc)
 #Residuals
-autoplot.marssMLE(Extent_2states_dry_diavarcov)
+autoplot.marssMLE(Extent_2states_div_diauneq)
 #Random code to use ####
 start.time <- Sys.time()
 ExtentChng_3states_dry_diauneq <- MARSS(y = ExtentChng_DryR, model = moddry_null_3states_qdiauneq,
