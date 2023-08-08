@@ -10,9 +10,11 @@ library(zoo)
 library(beepr)
 
 #read predictor data ####
-#did not replace 0s with NA and did not use log transform in models because nonconvergence issues
-dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T) 
-dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T) 
+#did not replace 0s with NA and could log transform but haven't
+dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T) %>% 
+  mutate(LogExtent = log(Extent+0.0001))
+dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T) %>% 
+  mutate(LogExtent = log(Extent+0.0001))
 
 #Response distribution plots #####
 dat_DryR %>% 
