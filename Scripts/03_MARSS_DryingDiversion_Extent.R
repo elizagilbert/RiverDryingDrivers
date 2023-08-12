@@ -192,66 +192,66 @@ moddiv_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal an
 #3 states Extent
   #with NA extent kem does not converge
 start.time <- Sys.time()
-Extent_3states_dry <- MARSS(y = Extent_DryR4, model = moddry_3states_qdiaeq, 
+Extent_3states_dry <- MARSS(y = Extent_DryR3, model = moddry_3states_qdiaeq, 
                                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                   conv.test.slope.tol = 0.09), fit = T) 
-Extent_3states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_3states_qdiaeq, control = list(maxit = 5000), 
+Extent_3states_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_3states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_3states_dry$par)
 
-Extent_null_3states_dry <- MARSS(Extent_DryR4, model = moddry_null_3states_qdiaeq, 
+Extent_null_3states_dry <- MARSS(Extent_DryR3, model = moddry_null_3states_qdiaeq, 
                                         control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                        conv.test.slope.tol = 0.09), fit = T) 
-Extent_null_3states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_null_3states_qdiaeq, control = list(maxit = 5000), 
+Extent_null_3states_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_null_3states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_null_3states_dry$par)
 
 #2 states Extent
-Extent_2states_dry <- MARSS(Extent_DryR4, model = moddry_2states_qdiaeq, 
+Extent_2states_dry <- MARSS(Extent_DryR3, model = moddry_2states_qdiaeq, 
                                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                   conv.test.slope.tol = 0.09),fit = T) 
-Extent_2states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_2states_qdiaeq, control = list(maxit = 5000), 
+Extent_2states_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_2states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_2states_dry$par)
 
-Extent_null_2states_dry <- MARSS(Extent_DryR4, model = moddry_null_2states_qdiaeq, 
+Extent_null_2states_dry <- MARSS(Extent_DryR3, model = moddry_null_2states_qdiaeq, 
                                         control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                        conv.test.slope.tol = 0.09),fit = T) 
-Extent_null_2states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_null_2states_qdiaeq, control = list(maxit = 5000), 
+Extent_null_2states_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_null_2states_qdiaeq, control = list(maxit = 5000), 
                                       method = "BFGS", inits = Extent_null_2states_dry$par)
 
-Extent_2states_div <- MARSS(Extent_DivR4, model = moddiv_2states_qdiaeq, 
+Extent_2states_div <- MARSS(Extent_DivR3, model = moddiv_2states_qdiaeq, 
                                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                   conv.test.slope.tol = 0.09),fit = T) 
-Extent_2states_div_BFGS <- MARSS(y = Extent_DivR4, model = moddiv_2states_qdiaeq, control = list(maxit = 5000), 
+Extent_2states_div_BFGS <- MARSS(y = Extent_DivR3, model = moddiv_2states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_2states_div$par)
 
-Extent_null_2states_div <- MARSS(Extent_DivR4, model = moddiv_null_2states_qdiaeq, 
+Extent_null_2states_div <- MARSS(Extent_DivR3, model = moddiv_null_2states_qdiaeq, 
                                  control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                 conv.test.slope.tol = 0.09),fit = T)
-Extent_null_2states_div_BFGS <- MARSS(y = Extent_DivR4, model = moddiv_null_2states_qdiaeq, control = list(maxit = 5000), 
+Extent_null_2states_div_BFGS <- MARSS(y = Extent_DivR3, model = moddiv_null_2states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_null_2states_div$par)
 
 #1 states Extent
-Extent_1state_dry <- MARSS(Extent_DryR4, model = moddry_1state_qdiaeq, 
+Extent_1state_dry <- MARSS(Extent_DryR3, model = moddry_1state_qdiaeq, 
                                  control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                 conv.test.slope.tol = 0.09),fit = T) 
-Extent_1state_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_1state_qdiaeq, control = list(maxit = 5000), 
+Extent_1state_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_1state_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_1state_dry$par)
 
-Extent_null_1state_dry <- MARSS(Extent_DryR4, model = moddry_null_1state_qdiaeq, 
+Extent_null_1state_dry <- MARSS(Extent_DryR3, model = moddry_null_1state_qdiaeq, 
                                       control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                      conv.test.slope.tol = 0.09),fit = T) 
-Extent_null_1state_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_null_1state_qdiaeq, control = list(maxit = 5000), 
+Extent_null_1state_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_null_1state_qdiaeq, control = list(maxit = 5000), 
                                 method = "BFGS", inits = Extent_null_1state_dry$par)
 
-Extent_1state_div <- MARSS(Extent_DivR4, model = moddiv_1state_qdiaeq, 
+Extent_1state_div <- MARSS(Extent_DivR3, model = moddiv_1state_qdiaeq, 
                                  control = list(maxit = 100, allow.degen = T, safe = T, 
                                                 conv.test.slope.tol = 0.09),fit = T) # Extent trace = 1 error
-Extent_1state_div_BFGS <- MARSS(y = Extent_DivR4, model = moddiv_1state_qdiaeq, control = list(maxit = 5000), 
+Extent_1state_div_BFGS <- MARSS(y = Extent_DivR3, model = moddiv_1state_qdiaeq, control = list(maxit = 5000), 
                                 method = "BFGS", inits = Extent_1state_div$par)
 
-Extent_null_1state_div <- MARSS(Extent_DivR4, model = moddiv_null_1state_qdiaeq, 
+Extent_null_1state_div <- MARSS(Extent_DivR3, model = moddiv_null_1state_qdiaeq, 
                                  control = list(maxit = 100, allow.degen = T, safe = T, 
                                                 conv.test.slope.tol = 0.09), fit = T) # Extent trace = 1 error
-Extent_null_1state_div_BFGS <- MARSS(y = Extent_DivR4, model = moddiv_null_1state_qdiaeq, control = list(maxit = 5000), 
+Extent_null_1state_div_BFGS <- MARSS(y = Extent_DivR3, model = moddiv_null_1state_qdiaeq, control = list(maxit = 5000), 
                                 method = "BFGS", inits = Extent_null_1state_div$par)
 
 beep(1)
@@ -288,18 +288,18 @@ rownames(ExtAICTable) <- c("3dry_diaeq",
 ExtAICTable %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC)
 
 #save and read top model ####
-saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentMod_BFGS.rds") # ~ 5 min
-saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_NAExtentMod_BFGS.rds") # ~12 min
-saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_LogExtentMod_BFGS.rds") #~ 6 min 
-saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_LogNAExtentMod_BFGS.rds") # ~12 min
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentMod_BFGS.rds") # ~ 5 min R1 raw
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentNAMod_BFGS.rds") # ~ 12 min R2 NA
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentLogMod_BFGS.rds") # ~ 6 min R3 log
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentLogNAMod_BFGS.rds") # ~ 12 min R4 logNA
 
 mod1 <- readRDS("ModelOutput/Top_ExtentMod_BFGS.rds")
-mod2 <- readRDS("ModelOutput/Top_NAExtentMod_BFGS.rds")
-mod3 <- readRDS("ModelOutput/Top_LogExtentMod_BFGS.rds") 
-mod4 <- readRDS("ModelOutput/Top_LogNAExtentMod_BFGS.rds")
+mod2 <- readRDS("ModelOutput/Top_ExtentNAMod_BFGS.rds")
+mod3 <- readRDS("ModelOutput/Top_ExtentLogMod_BFGS.rds") 
+mod4 <- readRDS("ModelOutput/Top_ExtentLogNAMod_BFGS.rds")
 
 #Residuals ####
-autoplot.marssMLE(mod1)
+autoplot.marssMLE(mod3)
 plot(mod) #this give a slightly different picture than autoplot
 predict(mod)
 plot(mod, plot.type="model.resids.ytT") #smoothations model residuals as opposed to innovation 
