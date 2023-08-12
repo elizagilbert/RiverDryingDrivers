@@ -10,17 +10,22 @@ library(zoo)
 library(beepr)
 
 #read predictor data ####
-#did not replace 0s with NA and could log transform but haven't
+#testing model output of log transformations with and without 0s as NAs
 dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T) %>% 
-  mutate(LogExtent = log(Extent+0.0001))
+  mutate(NAExtent = Extent) %>% 
+  mutate_at(c('NAExtent'), ~na_if(., 0)) %>% 
+  mutate(LogExtent = log(Extent+0.0001),
+         LogNAExtent = log(NAExtent))
 dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T) %>% 
-  mutate(LogExtent = log(Extent+0.0001))
+  mutate(NAExtent = Extent) %>% 
+  mutate_at(c('NAExtent'), ~na_if(., 0)) %>% 
+  mutate(LogExtent = log(Extent+0.0001),
+         LogNAExtent = log(NAExtent))
 
 #Response distribution plots #####
 dat_DryR %>% 
   select(Date, Extent, Reach) %>% 
   group_by(Reach) %>% 
-  mutate(LogExtent = log(Extent)) %>% 
   mutate(zLogExtent = (LogExtent - mean(LogExtent, na.rm = TRUE))/ sd(LogExtent, na.rm = TRUE)) %>% 
   mutate(zExtent = (Extent - mean(Extent, na.rm = TRUE))/ sd(Extent, na.rm = TRUE)) %>% 
   ggplot(aes(zExtent))+
@@ -69,12 +74,19 @@ predictor_func <- function(data, predictor){
 }
 
  #drying reaches
-Extent_DryR <- predictor_func(dat_DryR, Extent)
- #diversion reaches
-Extent_DivR <- predictor_func(dat_DivR, Extent)
+Extent_DryR1 <- predictor_func(dat_DryR, Extent)
+Extent_DryR2 <- predictor_func(dat_DryR, NAExtent)
+Extent_DryR3 <- predictor_func(dat_DryR, LogExtent)
+Extent_DryR4 <- predictor_func(dat_DryR, LogNAExtent)
+
+  #diversion reaches
+Extent_DivR1 <- predictor_func(dat_DivR, Extent)
+Extent_DivR2 <- predictor_func(dat_DivR, NAExtent)
+Extent_DivR3 <- predictor_func(dat_DivR, LogExtent)
+Extent_DivR4 <- predictor_func(dat_DivR, LogNAExtent)
 
 #creating a time series of first predictive variable
-Extent_DryR_ts <- ts(Extent_DryR, frequency = 365)
+Extent_DryR_ts <- ts(Extent_DryR4, frequency = 365)
 plot(Extent_DryR_ts[1,])
 
 #C matrices ####
@@ -127,84 +139,32 @@ Z_2states <- matrix(0,3,2); Z_2states[1,1] <- 1;Z_2states[2,1] <- 1; Z_2states[3
 moddry_3states_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and equal",
                         c=all_cov_matrix$Pred_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                         R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_3states_qdiauneq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and unequal",
-                           c=all_cov_matrix$Pred_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
-                           R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_3states_qdiavarcov <- list(B = "identity", U = matrix(0,3,1), Q = "equalvarcov",
-                           c=all_cov_matrix$Pred_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
-                           R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_3states_qdiauncon <- list(B = "identity", U = matrix(0,3,1), Q = "unconstrained",
-                                  c=all_cov_matrix$Pred_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
+
   #3 dry null
 moddry_null_3states_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and equal",
                               Z = "identity", A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_null_3states_qdiauneq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and unequal",
-                                Z = "identity", A = matrix(0,3,1), 
-                                R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_null_3states_qdiavarcov <- list(B = "identity", U = matrix(0,3,1), Q = "equalvarcov",
-                                  Z = "identity", A = matrix(0,3,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_null_3states_qdiauncon <- list(B = "identity", U = matrix(0,3,1), Q = "unconstrained",
-                                       Z = "identity", A = matrix(0,3,1), 
-                                       R = "diagonal and equal", x0 = "equal", tinitx = 0)
+
 #2 states
   #2 dry
 moddry_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
                               c=all_cov_matrix$Pred_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_2states_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                c=all_cov_matrix$Pred_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
-                                R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_2states_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                  c=all_cov_matrix$Pred_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_2states_qdiauncon <- list(B = "identity", U = matrix(0,2,1), Q = "unconstrained",
-                                  c=all_cov_matrix$Pred_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 dry null
 moddry_null_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
                               Z = Z_2states, A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_null_2states_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                Z = Z_2states, A = matrix(0,3,1), 
-                                R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_null_2states_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                  Z = Z_2states, A = matrix(0,3,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_null_2states_qdiauncon <- list(B = "identity", U = matrix(0,2,1), Q = "unconstrained",
-                                       Z = Z_2states, A = matrix(0,3,1), 
-                                       R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 diversion
 moddiv_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
                               c=all_cov_matrix$Pred_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddiv_2states_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                c=all_cov_matrix$Pred_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
-                                R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddiv_2states_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                  c=all_cov_matrix$Pred_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddiv_2states_qdiauncon <- list(B = "identity", U = matrix(0,2,1), Q = "unconstrained",
-                                  c=all_cov_matrix$Pred_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 diversion null
 moddiv_null_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
                               Z = "identity", A = matrix(0,2,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddiv_null_2states_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                Z = "identity", A = matrix(0,2,1), 
-                                R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddiv_null_2states_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                  Z = "identity", A = matrix(0,2,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddiv_null_2states_qdiauncon <- list(B = "identity", U = matrix(0,2,1), Q = "unconstrained",
-                                       Z = "identity", A = matrix(0,2,1), 
-                                       R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
 #1 state
   #1 dry
@@ -227,99 +187,141 @@ moddiv_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal an
                              R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
 #model fits ####
+#replace R.. with R1 = raw NA; R2 = 0s to NA; R3 = log(raw+0.001); R4 0s to NA and log(raw)
 
 #3 states Extent
+  #with NA extent kem does not converge
 start.time <- Sys.time()
-Extent_3states_dry_qdiaeq <- MARSS(Extent_DryR, model = moddry_3states_qdiaeq, control = list(conv.test.slope.tol = 0.09))
-Extent_3states_dry_diauneq <- MARSS(Extent_DryR, model = moddry_3states_qdiauneq, control = list(conv.test.slope.tol = 0.09))
-Extent_3states_dry_diavarcov <- MARSS(Extent_DryR, model = moddry_3states_qdiavarcov, control = list(conv.test.slope.tol = 0.09))
-Extent_3states_dry_diauncon <- MARSS(Extent_DryR, model = moddry_3states_qdiauncon, control = list(conv.test.slope.tol = 0.09))
+Extent_3states_dry <- MARSS(y = Extent_DryR4, model = moddry_3states_qdiaeq, 
+                                   control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                  conv.test.slope.tol = 0.09), fit = T) 
+Extent_3states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_3states_qdiaeq, control = list(maxit = 5000), 
+                                 method = "BFGS", inits = Extent_3states_dry$par)
 
-
-Extent_null_3states_dry_qdiaeq <- MARSS(Extent_DryR, model = moddry_null_3states_qdiaeq, control = list(conv.test.slope.tol = 0.09))
-Extent_null_3states_dry_diauneq <- MARSS(Extent_DryR, model = moddry_null_3states_qdiauneq, control = list(conv.test.slope.tol = 0.09))
-Extent_null_3states_dry_diavarcov <- MARSS(Extent_DryR, model = moddry_null_3states_qdiavarcov, control = list(conv.test.slope.tol = 0.09))
-Extent_null_3states_dry_diauncon <- MARSS(Extent_DryR, model = moddry_null_3states_qdiauncon, control = list(conv.test.slope.tol = 0.09))
+Extent_null_3states_dry <- MARSS(Extent_DryR4, model = moddry_null_3states_qdiaeq, 
+                                        control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                       conv.test.slope.tol = 0.09), fit = T) 
+Extent_null_3states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_null_3states_qdiaeq, control = list(maxit = 5000), 
+                                 method = "BFGS", inits = Extent_null_3states_dry$par)
 
 #2 states Extent
-Extent_2states_dry_qdiaeq <- MARSS(Extent_DryR, model = moddry_2states_qdiaeq, control = list(conv.test.slope.tol = 0.09))
-Extent_2states_dry_diauneq <- MARSS(Extent_DryR, model = moddry_2states_qdiauneq, control = list(conv.test.slope.tol = 0.09))
-Extent_2states_dry_diavarcov <- MARSS(Extent_DryR, model = moddry_2states_qdiavarcov, control = list(conv.test.slope.tol = 0.09))
-Extent_2states_dry_diauncon <- MARSS(Extent_DryR, model = moddry_2states_qdiauncon, control = list(conv.test.slope.tol = 0.09))
+Extent_2states_dry <- MARSS(Extent_DryR4, model = moddry_2states_qdiaeq, 
+                                   control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                  conv.test.slope.tol = 0.09),fit = T) 
+Extent_2states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_2states_qdiaeq, control = list(maxit = 5000), 
+                                 method = "BFGS", inits = Extent_2states_dry$par)
 
+Extent_null_2states_dry <- MARSS(Extent_DryR4, model = moddry_null_2states_qdiaeq, 
+                                        control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                       conv.test.slope.tol = 0.09),fit = T) 
+Extent_null_2states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_null_2states_qdiaeq, control = list(maxit = 5000), 
+                                      method = "BFGS", inits = Extent_null_2states_dry$par)
 
-Extent_null_2states_dry_qdiaeq <- MARSS(Extent_DryR, model = moddry_null_2states_qdiaeq, control = list(conv.test.slope.tol = 0.09))
-Extent_null_2states_dry_diauneq <- MARSS(Extent_DryR, model = moddry_null_2states_qdiauneq, control = list(conv.test.slope.tol = 0.09))
-Extent_null_2states_dry_diavarcov <- MARSS(Extent_DryR, model = moddry_null_2states_qdiavarcov, control = list(conv.test.slope.tol = 0.09))
-Extent_null_2states_dry_diauncon <- MARSS(Extent_DryR, model = moddry_null_2states_qdiauncon, control = list(conv.test.slope.tol = 0.09))
+Extent_2states_div <- MARSS(Extent_DivR4, model = moddiv_2states_qdiaeq, 
+                                   control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                  conv.test.slope.tol = 0.09),fit = T) 
+Extent_2states_div_BFGS <- MARSS(y = Extent_DivR4, model = moddiv_2states_qdiaeq, control = list(maxit = 5000), 
+                                 method = "BFGS", inits = Extent_2states_div$par)
 
-Extent_2states_div_qdiaeq <- MARSS(Extent_DivR, model = moddiv_2states_qdiaeq, control = list(conv.test.slope.tol = 0.09))
-Extent_2states_div_diauneq <- MARSS(Extent_DivR, model = moddiv_2states_qdiauneq, control = list(conv.test.slope.tol = 0.09))
-Extent_2states_div_diavarcov <- MARSS(Extent_DivR, model = moddiv_2states_qdiavarcov, control = list(conv.test.slope.tol = 0.09))
-Extent_2states_div_diauncon <- MARSS(Extent_DivR, model = moddiv_2states_qdiauncon, control = list(conv.test.slope.tol = 0.09))
-
-Extent_null_2states_div_qdiaeq <- MARSS(Extent_DivR, model = moddiv_null_2states_qdiaeq, control = list(conv.test.slope.tol = 0.09))
-Extent_null_2states_div_diauneq <- MARSS(Extent_DivR, model = moddiv_null_2states_qdiauneq, control = list(conv.test.slope.tol = 0.09))
-Extent_null_2states_div_diavarcov <- MARSS(Extent_DivR, model = moddiv_null_2states_qdiavarcov, control = list(conv.test.slope.tol = 0.09))
-Extent_null_2states_div_diauncon <- MARSS(Extent_DivR, model = moddiv_null_2states_qdiauncon, control = list(conv.test.slope.tol = 0.09))
+Extent_null_2states_div <- MARSS(Extent_DivR4, model = moddiv_null_2states_qdiaeq, 
+                                 control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                conv.test.slope.tol = 0.09),fit = T)
+Extent_null_2states_div_BFGS <- MARSS(y = Extent_DivR4, model = moddiv_null_2states_qdiaeq, control = list(maxit = 5000), 
+                                 method = "BFGS", inits = Extent_null_2states_div$par)
 
 #1 states Extent
-Extent_1state_dry_diaeq <- MARSS(Extent_DryR, model = moddry_1state_qdiaeq, control = list(conv.test.slope.tol = 0.09))
-Extent_null_1state_dry_diaeq <- MARSS(Extent_DryR, model = moddry_null_1state_qdiaeq, control = list(conv.test.slope.tol = 0.09))
+Extent_1state_dry <- MARSS(Extent_DryR4, model = moddry_1state_qdiaeq, 
+                                 control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                conv.test.slope.tol = 0.09),fit = T) 
+Extent_1state_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_1state_qdiaeq, control = list(maxit = 5000), 
+                                 method = "BFGS", inits = Extent_1state_dry$par)
 
+Extent_null_1state_dry <- MARSS(Extent_DryR4, model = moddry_null_1state_qdiaeq, 
+                                      control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                     conv.test.slope.tol = 0.09),fit = T) 
+Extent_null_1state_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_null_1state_qdiaeq, control = list(maxit = 5000), 
+                                method = "BFGS", inits = Extent_null_1state_dry$par)
 
-Extent_1state_div_diaeq <- MARSS(Extent_DivR, model = moddiv_1state_qdiaeq, control = list(conv.test.slope.tol = 0.09))
-Extent_null_1state_div_diaeq <- MARSS(Extent_DivR, model = moddiv_null_1state_qdiaeq, control = list(conv.test.slope.tol = 0.09))
+Extent_1state_div <- MARSS(Extent_DivR4, model = moddiv_1state_qdiaeq, 
+                                 control = list(maxit = 100, allow.degen = T, safe = T, 
+                                                conv.test.slope.tol = 0.09),fit = T) # Extent trace = 1 error
+Extent_1state_div_BFGS <- MARSS(y = Extent_DivR4, model = moddiv_1state_qdiaeq, control = list(maxit = 5000), 
+                                method = "BFGS", inits = Extent_1state_div$par)
+
+Extent_null_1state_div <- MARSS(Extent_DivR4, model = moddiv_null_1state_qdiaeq, 
+                                 control = list(maxit = 100, allow.degen = T, safe = T, 
+                                                conv.test.slope.tol = 0.09), fit = T) # Extent trace = 1 error
+Extent_null_1state_div_BFGS <- MARSS(y = Extent_DivR4, model = moddiv_null_1state_qdiaeq, control = list(maxit = 5000), 
+                                method = "BFGS", inits = Extent_null_1state_div$par)
+
 beep(1)
 end.time <- Sys.time()
 print(round(end.time - start.time,2))
 
 #AIC ####
-Extent_AIC <- c(Extent_3states_dry_qdiaeq$AICc, Extent_3states_dry_diauneq$AICc, Extent_3states_dry_diavarcov$AICc, Extent_3states_dry_diauncon$AICc,
-                Extent_null_3states_dry_qdiaeq$AICc, Extent_null_3states_dry_diauneq$AICc, Extent_null_3states_dry_diavarcov$AICc, Extent_null_3states_dry_diauncon$AICc,
-                Extent_2states_dry_qdiaeq$AICc, Extent_2states_dry_diauneq$AICc, Extent_2states_dry_diavarcov$AICc, Extent_2states_dry_diauncon$AICc,
-                Extent_null_2states_dry_qdiaeq$AICc, Extent_null_2states_dry_diauneq$AICc, Extent_null_2states_dry_diavarcov$AICc, Extent_null_2states_dry_diauncon$AICc,
-                Extent_1state_dry_diaeq$AICc,
-                Extent_null_1state_dry_diaeq$AICc,
-                Extent_2states_div_qdiaeq$AICc, Extent_2states_div_diauneq$AICc, Extent_2states_div_diavarcov$AICc, Extent_2states_div_diauncon$AICc,
-                Extent_null_2states_div_qdiaeq$AICc, Extent_null_2states_div_diauneq$AICc, Extent_null_2states_div_diavarcov$AICc, Extent_null_2states_div_diauncon$AICc,
-                Extent_1state_div_diaeq$AICc,
-                Extent_null_1state_div_diaeq$AICc)
+Extent_AIC <- c(Extent_3states_dry_BFGS$AICc, 
+                Extent_null_3states_dry_BFGS$AICc, 
+                Extent_2states_dry_BFGS$AICc, 
+                Extent_null_2states_dry_BFGS$AICc, 
+                Extent_1state_dry_BFGS$AICc,
+                Extent_null_1state_dry_BFGS$AICc,
+                Extent_2states_div_BFGS$AICc, 
+                Extent_null_2states_div_BFGS$AICc, 
+                Extent_1state_div_BFGS$AICc,
+                Extent_null_1state_div_BFGS$AICc)
 
 ExtDelAIC <- Extent_AIC - min(Extent_AIC)
 ExtRelLik <- exp(-0.5 * ExtDelAIC)
 ExtAICWeight <- ExtRelLik/sum(ExtRelLik)
 ExtAICTable <- data.frame(AICc = Extent_AIC, delAIC = ExtDelAIC, relLike = ExtRelLik,
                           weight = ExtAICWeight)
-rownames(ExtAICTable) <- c("3dry_diaeq", "3dry_diuneq", "3dry_varcov", "3dry_uncon",
-                           "3dry_null_diaeq", "3dry_null_diuneq", "3dry_null_varcov", "3dry_null_uncon",
-                           "2dry_diaeq", "2dry_diuneq", "2dry_varcov", "2dry_uncon",
-                           "2dry_null_diaeq", "2dry_null_diuneq", "2dry_null_varcov", "2dry_null_uncon",
+rownames(ExtAICTable) <- c("3dry_diaeq", 
+                           "3dry_null_diaeq", 
+                           "2dry_diaeq", 
+                           "2dry_null_diaeq", 
                            "1dry",
                            "1dry_null",
-                           "2div_diaeq", "2div_diuneq", "2div_varcov", "2div_uncon",
-                           "2div_null_diaeq", "2div_null_diuneq", "2div_null_varcov", "2div_null_uncon",
+                           "2div_diaeq", 
+                           "2div_null_diaeq", 
                            "1div",
                            "1div_null")
 ExtAICTable %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC)
 
-#refit top model with BFGS ####
-BFGSfit_TopExtent <- MARSS(y = Extent_DivR, model = moddiv_2states_qdiauncon,
-                           control = list(maxit = 5000), method = "BFGS", inits=Extent_2states_div_diauncon$par)
 #save and read top model ####
-saveRDS(BFGSfit_TopExtent, "ModelOutput/TopExtentMod_BFGS.rds")
-mod <- readRDS("ModelOutput/TopExtentMod_BFGS.rds")
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentMod_BFGS.rds") # ~ 5 min
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_NAExtentMod_BFGS.rds") # ~12 min
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_LogExtentMod_BFGS.rds") #~ 6 min 
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_LogNAExtentMod_BFGS.rds") # ~12 min
+
+mod1 <- readRDS("ModelOutput/Top_ExtentMod_BFGS.rds")
+mod2 <- readRDS("ModelOutput/Top_NAExtentMod_BFGS.rds")
+mod3 <- readRDS("ModelOutput/Top_LogExtentMod_BFGS.rds") 
+mod4 <- readRDS("ModelOutput/Top_LogNAExtentMod_BFGS.rds")
+
+#Residuals ####
+autoplot.marssMLE(mod1)
+plot(mod) #this give a slightly different picture than autoplot
+predict(mod)
+plot(mod, plot.type="model.resids.ytT") #smoothations model residuals as opposed to innovation 
 
 #model output  ####
-summary(mod)
-MARSSparamCIs(mod) #tidy.marssMLE does the same thing
+summary(mod1)
+summary(mod2)
+summary(mod3)
+summary(mod4)
+
+MARSSparamCIs(mod1) #tidy.marssMLE does the same thing
+MARSSparamCIs(mod2) #tidy.marssMLE does the same thing
+MARSSparamCIs(mod3) #tidy.marssMLE does the same thing
+MARSSparamCIs(mod4) #tidy.marssMLE does the same thing
+
 fitted(mod) #data and state fitted values (predictions)
 preds <- predict(mod,
                      interval = "confidence",
                      se.fit = TRUE) #another way to get estimate and CIs
 #plotting
-conf_marss1 <- fitted(mod, type = "ytT", interval = "confidence")
-pred_marss1 <- fitted(mod, type = "ytT", interval = "prediction")
+conf_marss1 <- fitted(mod1, type = "ytT", interval = "confidence")
+pred_marss1 <- fitted(mod1, type = "ytT", interval = "prediction")
 df <- cbind(conf_marss1, pred_marss1[, c(".lwr", ".upr")]) %>% 
   rename(Reach = 1)
 
@@ -333,11 +335,7 @@ ggplot(df, aes(x = t, y = .fitted)) +
   ggtitle("Rio Grande")
 
 
-#Residuals ####
-autoplot.marssMLE(BFGSfit_TopExtent)
-plot(BFGSfit_TopExtent) #this give a slightly different picture than autoplot
-predict(BFGSfit_TopExtent)
-plot(BFGSfit_TopExtent, plot.type="model.resids.ytT") #smoothations model residuals as opposed to innovation 
+
 
 
 
