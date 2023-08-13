@@ -74,9 +74,10 @@ TempPrecip_R1 <- dat_TempPrecip_LosLunas %>%
   filter(Date >= "2010-01-01") %>% 
   group_by(year(Date)) %>% 
   mutate(PrecipCum_mm = cumsum(Precip_mm), TempCum_C = cumsum(Temp_C)) %>% 
+  mutate(PrecipChng_mm = Precip_mm - lag(Precip_mm, default = Precip_mm[1]),
+    TempChng_C = Temp_C - lag(Temp_C, default = Temp_C[1])) %>%   
   ungroup() %>% 
-  select(Precip_mm, Temp_C, PrecipCum_mm, TempCum_C)
-
+  select(Precip_mm, Temp_C, PrecipCum_mm, PrecipChng_mm, TempCum_C, TempChng_C)
 
 
 #Human covariates 
@@ -94,9 +95,10 @@ Diversions_R1 <- dat_diversions %>%
   arrange(Date) %>% 
   distinct(Date, Diversion_Isleta_Totalcfs) %>% 
   group_by(year(Date)) %>% 
-  mutate(DiversionCum_cfs = cumsum(Diversion_Isleta_Totalcfs)) %>% 
+  mutate(DiversionCum_cfs = cumsum(Diversion_Isleta_Totalcfs),
+         DiversionChng_cfs = Diversion_Isleta_Totalcfs - lag(Diversion_Isleta_Totalcfs, default = Diversion_Isleta_Totalcfs[1])) %>% 
   ungroup() %>% 
-  select(Diversion_Isleta_Totalcfs, DiversionCum_cfs) %>% 
+  select(Diversion_Isleta_Totalcfs, DiversionCum_cfs, DiversionChng_cfs) %>% 
   rename(Diversion_cfs = Diversion_Isleta_Totalcfs)
 
 
@@ -113,9 +115,10 @@ Returns_R1 <- dat_returns %>%
   arrange(Date) %>% 
   distinct(Date, Returns_cfs) %>% 
   group_by(year(Date)) %>% 
-  mutate(ReturnsCum_cfs = cumsum(Returns_cfs)) %>% 
+  mutate(ReturnsCum_cfs = cumsum(Returns_cfs),
+         ReturnsChng_cfs = Returns_cfs - lag(Returns_cfs, default = Returns_cfs[1])) %>% 
   ungroup() %>% 
-  select(Returns_cfs, ReturnsCum_cfs)
+  select(Returns_cfs, ReturnsCum_cfs, ReturnsChng_cfs)
 
 #Discharge
 Discharge_R1 <- dat_discharge %>% 
@@ -124,9 +127,10 @@ Discharge_R1 <- dat_discharge %>%
   complete(dateTime = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>%
   filter(dateTime >= "2010-01-01") %>% 
   group_by(year(dateTime)) %>% 
-  mutate(DischargeCum_cfs = cumsum(Discharge_cfs)) %>% 
+  mutate(DischargeCum_cfs = cumsum(Discharge_cfs),
+         DischargeChng_cfs = Discharge_cfs - lag(Discharge_cfs, default = Discharge_cfs[1])) %>% 
   ungroup() %>% 
-  select(Discharge_cfs, DischargeCum_cfs) 
+  select(Discharge_cfs, DischargeCum_cfs, DischargeChng_cfs) 
 
 
 #R1 combine all data frames 
@@ -179,9 +183,11 @@ TempPrecip_R2 <- dat_TempPrecip_AllOtherLocs %>%
          Temp_C = na.approx(Temp_C, na.rm = F)) %>% 
   filter(Date >= "2010-01-01") %>% 
   group_by(year(Date)) %>% 
-  mutate(PrecipCum_mm = cumsum(Precip_mm), TempCum_C = cumsum(Temp_C)) %>% 
+  mutate(PrecipCum_mm = cumsum(Precip_mm), TempCum_C = cumsum(Temp_C),
+         PrecipChng_mm = Precip_mm - lag(Precip_mm, default = Precip_mm[1]),
+         TempChng_C = Temp_C - lag(Temp_C, default = Temp_C[1])) %>% 
   ungroup() %>% 
-  select(Precip_mm, Temp_C, PrecipCum_mm, TempCum_C)
+  select(Precip_mm, Temp_C, PrecipCum_mm, PrecipChng_mm, TempCum_C, TempChng_C)
 
 
 #Diversions (At Isleta)
@@ -201,9 +207,10 @@ Returns_R2 <- dat_returns %>%
   distinct(Date, Returns_cfs) %>% 
   filter(Date >= "2010-01-01") %>% arrange(Date) %>% 
   group_by(year(Date)) %>% 
-  mutate(ReturnsCum_cfs = cumsum(Returns_cfs)) %>% 
+  mutate(ReturnsCum_cfs = cumsum(Returns_cfs),
+         ReturnsChng_cfs = Returns_cfs - lag(Returns_cfs, default = Returns_cfs[1])) %>% 
   ungroup() %>% 
-  select(Returns_cfs, ReturnsCum_cfs)
+  select(Returns_cfs, ReturnsCum_cfs, ReturnsChng_cfs)
 
 #Returns (gage called At State Hwy 346 near Bosque Farms)
 Discharge_R2 <- dat_discharge %>% 
@@ -216,9 +223,10 @@ Discharge_R2 <- dat_discharge %>%
   ungroup() %>% 
   distinct(dateTime, Discharge_cfs) %>% 
   group_by(year(dateTime)) %>% 
-  mutate(DischargeCum_cfs = cumsum(Discharge_cfs)) %>% 
+  mutate(DischargeCum_cfs = cumsum(Discharge_cfs),
+         DischargeChng_cfs = Discharge_cfs - lag(Discharge_cfs, default = Discharge_cfs[1])) %>% 
   ungroup() %>% 
-  select(Discharge_cfs, DischargeCum_cfs)
+  select(Discharge_cfs, DischargeCum_cfs, DischargeChng_cfs)
 
 
 #R2 combine all data frames 
@@ -274,7 +282,8 @@ Temp_R3 <- dat_TempPrecip_AllOtherLocs %>%
   arrange(Date) %>% 
   mutate(Temp_C = na.approx(Temp_C, na.rm = F)) %>% 
   group_by(year(Date)) %>% 
-  mutate(TempCum_C = cumsum(Temp_C)) %>% 
+  mutate(TempCum_C = cumsum(Temp_C),
+         TempChng_C = Temp_C - lag(Temp_C, default = Temp_C[1])) %>% 
   ungroup() %>% 
   select(!"year(Date)") %>% 
   filter(Date >= "2010-01-01") %>% arrange(Date) %>% select(!Date)
@@ -294,10 +303,11 @@ Precip_R3 <- dat_TempPrecip_AllOtherLocs %>%
   complete(Date = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>% 
   mutate(Precip_mm = ifelse(is.na(Precip_mm), mean(Precip_mm, na.rm = T), Precip_mm)) %>%
   group_by(year(Date)) %>% 
-  mutate(PrecipCum_mm = cumsum(Precip_mm)) %>% 
+  mutate(PrecipCum_mm = cumsum(Precip_mm),
+         PrecipChng_mm = Precip_mm - lag(Precip_mm, default = Precip_mm[1])) %>% 
   ungroup() %>% 
   filter(Date >= "2010-01-01") %>%  arrange(Date) %>% 
-  select(Precip_mm, PrecipCum_mm)
+  select(Precip_mm, PrecipCum_mm, PrecipChng_mm)
 
 TempPrecip_R3 <- cbind(Precip_R3, Temp_R3)
 
@@ -314,9 +324,10 @@ Diversions_R3 <- dat_diversions %>%
   distinct(Date, Diversion_cfs) %>% 
   filter(Date >= "2010-01-01") %>% arrange(Date) %>% 
   group_by(year(Date)) %>% 
-  mutate(DiversionCum_cfs = cumsum(Diversion_cfs)) %>% 
+  mutate(DiversionCum_cfs = cumsum(Diversion_cfs),
+         DiversionChng_cfs = Diversion_cfs - lag(Diversion_cfs, default = Diversion_cfs[1])) %>% 
   ungroup() %>% 
-  select(Diversion_cfs,DiversionCum_cfs)
+  select(Diversion_cfs,DiversionCum_cfs, DiversionChng_cfs)
 
 #Returns river reach 3 (LSJDR, SFRDR, NCPPS, NBYPS) three are not gaged in this reach (LJYDR, 9 Mile, NCPDV)
 Returns_R3 <- dat_returns %>% 
@@ -332,9 +343,10 @@ Returns_R3 <- dat_returns %>%
   distinct(Date, Returns_cfs) %>% 
   filter(Date >= "2010-01-01") %>% arrange(Date) %>% 
   group_by(year(Date)) %>% 
-  mutate(ReturnsCum_cfs = cumsum(Returns_cfs)) %>% 
+  mutate(ReturnsCum_cfs = cumsum(Returns_cfs),
+         ReturnsChng_cfs = Returns_cfs - lag(Returns_cfs, default = Returns_cfs[1])) %>% 
   ungroup() %>% 
-  select(Returns_cfs, ReturnsCum_cfs)
+  select(Returns_cfs, ReturnsCum_cfs, ReturnsChng_cfs)
 
 
 #There are 3 or possible 4 that I could use and I haven't decided....
@@ -349,9 +361,10 @@ Discharge_R3 <- dat_discharge %>%
   ungroup() %>% 
   distinct(dateTime, Discharge_cfs) %>% 
   group_by(year(dateTime)) %>% 
-  mutate(DischargeCum_cfs = cumsum(Discharge_cfs)) %>% 
+  mutate(DischargeCum_cfs = cumsum(Discharge_cfs),
+         DischargeChng_cfs = Discharge_cfs - lag(Discharge_cfs, default = Discharge_cfs[1])) %>% 
   ungroup() %>% 
-  select(Discharge_cfs, DischargeCum_cfs)
+  select(Discharge_cfs, DischargeCum_cfs, DischargeChng_cfs)
   
 #R3 combine all data frames 
 Reach3 <- as.data.frame(cbind(Ext_ExtChng_R3, MileDays_R3, TempPrecip_R3, 

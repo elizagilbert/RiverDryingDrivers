@@ -137,7 +137,7 @@ Z_2states <- matrix(0,3,2); Z_2states[1,1] <- 1;Z_2states[2,1] <- 1; Z_2states[3
 #3 states
   #3 dry
 moddry_3states_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and equal",
-                        c=all_cov_matrix$Pred_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
+                        c=all_cov_matrix$Pred_Dry_3statesReduced, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                         R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #3 dry null
@@ -148,7 +148,7 @@ moddry_null_3states_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diago
 #2 states
   #2 dry
 moddry_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
-                              c=all_cov_matrix$Pred_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
+                              c=all_cov_matrix$Pred_Dry_2statesReduced, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 dry null
@@ -158,7 +158,7 @@ moddry_null_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diago
 
   #2 diversion
 moddiv_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
-                              c=all_cov_matrix$Pred_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
+                              c=all_cov_matrix$Pred_Div_2statesReduced, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 diversion null
@@ -169,7 +169,7 @@ moddiv_null_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diago
 #1 state
   #1 covariates
 mod_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
-                    c=all_cov_matrix$Pred_Dry_1state, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
+                    c=all_cov_matrix$Pred_Dry_1stateReduced, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
                     R = "diagonal and equal", x0 = "equal", tinitx = 0)
   #1 null
 mod_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
@@ -183,54 +183,54 @@ mod_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal a
 #3 states Extent
  
 start.time <- Sys.time()
-Extent_3states_dry <- MARSS(y = Extent_DryR3, model = moddry_3states_qdiaeq, 
+Extent_3states_dry <- MARSS(y = Extent_DryR4, model = moddry_3states_qdiaeq, 
                                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                   conv.test.slope.tol = 0.09), fit = T) 
-Extent_3states_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_3states_qdiaeq, control = list(maxit = 5000), 
+Extent_3states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_3states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_3states_dry$par)
 
-Extent_null_3states_dry <- MARSS(Extent_DryR3, model = moddry_null_3states_qdiaeq, 
+Extent_null_3states_dry <- MARSS(Extent_DryR4, model = moddry_null_3states_qdiaeq, 
                                         control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                        conv.test.slope.tol = 0.09), fit = T) 
-Extent_null_3states_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_null_3states_qdiaeq, control = list(maxit = 5000), 
+Extent_null_3states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_null_3states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_null_3states_dry$par)
 
 #2 states Extent
-Extent_2states_dry <- MARSS(Extent_DryR3, model = moddry_2states_qdiaeq, 
+Extent_2states_dry <- MARSS(Extent_DryR4, model = moddry_2states_qdiaeq, 
                                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                   conv.test.slope.tol = 0.09),fit = T) 
-Extent_2states_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_2states_qdiaeq, control = list(maxit = 5000), 
+Extent_2states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_2states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_2states_dry$par)
 
-Extent_null_2states_dry <- MARSS(Extent_DryR3, model = moddry_null_2states_qdiaeq, 
+Extent_null_2states_dry <- MARSS(Extent_DryR4, model = moddry_null_2states_qdiaeq, 
                                         control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                        conv.test.slope.tol = 0.09),fit = T) 
-Extent_null_2states_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_null_2states_qdiaeq, control = list(maxit = 5000), 
+Extent_null_2states_dry_BFGS <- MARSS(y = Extent_DryR4, model = moddry_null_2states_qdiaeq, control = list(maxit = 5000), 
                                       method = "BFGS", inits = Extent_null_2states_dry$par)
 
-Extent_2states_div <- MARSS(Extent_DivR3, model = moddiv_2states_qdiaeq, 
+Extent_2states_div <- MARSS(Extent_DivR4, model = moddiv_2states_qdiaeq, 
                                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                   conv.test.slope.tol = 0.09),fit = T) 
-Extent_2states_div_BFGS <- MARSS(y = Extent_DivR3, model = moddiv_2states_qdiaeq, control = list(maxit = 5000), 
+Extent_2states_div_BFGS <- MARSS(y = Extent_DivR4, model = moddiv_2states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_2states_div$par)
 
-Extent_null_2states_div <- MARSS(Extent_DivR3, model = moddiv_null_2states_qdiaeq, 
+Extent_null_2states_div <- MARSS(Extent_DivR4, model = moddiv_null_2states_qdiaeq, 
                                  control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                 conv.test.slope.tol = 0.09),fit = T)
-Extent_null_2states_div_BFGS <- MARSS(y = Extent_DivR3, model = moddiv_null_2states_qdiaeq, control = list(maxit = 5000), 
+Extent_null_2states_div_BFGS <- MARSS(y = Extent_DivR4, model = moddiv_null_2states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_null_2states_div$par)
 
 #1 state Extent
-Extent_1state <- MARSS(Extent_DryR3, model = mod_1state_qdiaeq, 
+Extent_1state <- MARSS(Extent_DryR4, model = mod_1state_qdiaeq, 
                                  control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                 conv.test.slope.tol = 0.09),fit = T) 
-Extent_1state_BFGS <- MARSS(y = Extent_DryR3, model = mod_1state_qdiaeq, control = list(maxit = 5000), 
+Extent_1state_BFGS <- MARSS(y = Extent_DryR4, model = mod_1state_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_1state$par)
 
-Extent_null_1state <- MARSS(Extent_DryR3, model = mod_null_1state_qdiaeq, 
+Extent_null_1state <- MARSS(Extent_DryR4, model = mod_null_1state_qdiaeq, 
                                       control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                      conv.test.slope.tol = 0.09),fit = T) 
-Extent_null_1state_BFGS <- MARSS(y = Extent_DryR3, model = mod_null_1state_qdiaeq, control = list(maxit = 5000), 
+Extent_null_1state_BFGS <- MARSS(y = Extent_DryR4, model = mod_null_1state_qdiaeq, control = list(maxit = 5000), 
                                 method = "BFGS", inits = Extent_null_1state$par)
 
 beep(1)
@@ -263,18 +263,19 @@ rownames(ExtAICTable) <- c("3dry_diaeq",
 ExtAICTable %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC)
 
 #save and read top model ####
-saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentMod_BFGS.rds") # ~ 5 min R1 raw
-saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentNAMod_BFGS.rds") # ~ 12 min R2 NA
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentMod_BFGS.rds") # ~ 4 min R1 raw
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentNAMod_BFGS.rds") # ~ 11 min R2 NA
 saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentLogMod_BFGS.rds") # ~ 6 min R3 log
-saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentLogNAMod_BFGS.rds") # ~ 12 min R4 logNA
-
+saveRDS(Extent_2states_div_BFGS, "ModelOutput/Top_ExtentLogNAMod_BFGS.rds") # ~ 10 min R4 logNA
+# 
 mod1 <- readRDS("ModelOutput/Top_ExtentMod_BFGS.rds")
 mod2 <- readRDS("ModelOutput/Top_ExtentNAMod_BFGS.rds")
 mod3 <- readRDS("ModelOutput/Top_ExtentLogMod_BFGS.rds") 
 mod4 <- readRDS("ModelOutput/Top_ExtentLogNAMod_BFGS.rds")
 
 #Residuals ####
-autoplot.marssMLE(mod3)
+autoplot.marssMLE(mod4)
+
 plot(mod) #this give a slightly different picture than autoplot
 predict(mod)
 plot(mod, plot.type="model.resids.ytT") #smoothations model residuals as opposed to innovation 
