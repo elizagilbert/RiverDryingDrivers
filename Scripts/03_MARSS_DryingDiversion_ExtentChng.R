@@ -187,22 +187,12 @@ moddiv_null_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diago
 
 #1 state
   #1 dry
-moddry_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
+mod_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
                     c=all_cov_matrix$Pred_Dry_1state, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
                     R = "diagonal and equal", x0 = "equal", tinitx = 0)
   #1 dry null
-moddry_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
+mod_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
                              Z = matrix(1,3,1), A = matrix(0,3,1), 
-                             R = "diagonal and equal", x0 = "equal", tinitx = 0)
-
-  #1 diversion
-moddiv_1state_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
-                      c=all_cov_matrix$Pred_Div_1state, C=C_1state, Z = matrix(1,2,1), A = matrix(0,2,1), 
-                      R = "diagonal and equal", x0 = "equal", tinitx = 0)
-  
-  #1 diversion null
-moddiv_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
-                             Z = matrix(1,2,1), A = matrix(0,2,1), 
                              R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
 
@@ -251,29 +241,17 @@ ExtentChng_null_2states_div_BFGS <- MARSS(y = ExtentChng_DivR6, model = moddiv_n
                                  method = "BFGS", inits = ExtentChng_null_2states_div$par)
 
 #1 states ExtentChng
-ExtentChng_1state_dry <- MARSS(ExtentChng_DryR6, model = moddry_1state_qdiaeq, 
+ExtentChng_1state <- MARSS(ExtentChng_DryR6, model = mod_1state_qdiaeq, 
                                  control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                 conv.test.slope.tol = 0.09),fit = T) 
-ExtentChng_1state_dry_BFGS <- MARSS(y = ExtentChng_DryR6, model = moddry_1state_qdiaeq, control = list(maxit = 5000), 
-                                 method = "BFGS", inits = ExtentChng_1state_dry$par)
+ExtentChng_1state_BFGS <- MARSS(y = ExtentChng_DryR6, model = mod_1state_qdiaeq, control = list(maxit = 5000), 
+                                 method = "BFGS", inits = ExtentChng_1state$par)
 
-ExtentChng_null_1state_dry <- MARSS(ExtentChng_DryR6, model = moddry_null_1state_qdiaeq, 
+ExtentChng_null_1state <- MARSS(ExtentChng_DryR6, model = mod_null_1state_qdiaeq, 
                                       control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                      conv.test.slope.tol = 0.09),fit = T) 
-ExtentChng_null_1state_dry_BFGS <- MARSS(y = ExtentChng_DryR6, model = moddry_null_1state_qdiaeq, control = list(maxit = 5000), 
-                                method = "BFGS", inits = ExtentChng_null_1state_dry$par)
-
-ExtentChng_1state_div <- MARSS(ExtentChng_DivR6, model = moddiv_1state_qdiaeq, 
-                                 control = list(maxit = 100, allow.degen = T, safe = T, 
-                                                conv.test.slope.tol = 0.09),fit = T) # ExtentChng trace = 1 error
-ExtentChng_1state_div_BFGS <- MARSS(y = ExtentChng_DivR6, model = moddiv_1state_qdiaeq, control = list(maxit = 5000), 
-                                method = "BFGS", inits = ExtentChng_1state_div$par)
-
-ExtentChng_null_1state_div <- MARSS(ExtentChng_DivR6, model = moddiv_null_1state_qdiaeq, 
-                                 control = list(maxit = 100, allow.degen = T, safe = T, 
-                                                conv.test.slope.tol = 0.09), fit = T) # ExtentChng trace = 1 error
-ExtentChng_null_1state_div_BFGS <- MARSS(y = ExtentChng_DivR6, model = moddiv_null_1state_qdiaeq, control = list(maxit = 5000), 
-                                method = "BFGS", inits = ExtentChng_null_1state_div$par)
+ExtentChng_null_1state_BFGS <- MARSS(y = ExtentChng_DryR6, model = mod_null_1state_qdiaeq, control = list(maxit = 5000), 
+                                method = "BFGS", inits = ExtentChng_null_1state$par)
 
 beep(1)
 end.time <- Sys.time()
@@ -284,12 +262,10 @@ ExtentChng_AIC <- c(ExtentChng_3states_dry_BFGS$AICc,
                 ExtentChng_null_3states_dry_BFGS$AICc, 
                 ExtentChng_2states_dry_BFGS$AICc, 
                 ExtentChng_null_2states_dry_BFGS$AICc, 
-                ExtentChng_1state_dry_BFGS$AICc,
-                ExtentChng_null_1state_dry_BFGS$AICc,
                 ExtentChng_2states_div_BFGS$AICc, 
                 ExtentChng_null_2states_div_BFGS$AICc, 
-                ExtentChng_1state_div_BFGS$AICc,
-                ExtentChng_null_1state_div_BFGS$AICc)
+                ExtentChng_1state_BFGS$AICc,
+                ExtentChng_null_1state_BFGS$AICc)
 
 ExtDelAIC <- ExtentChng_AIC - min(ExtentChng_AIC)
 ExtRelLik <- exp(-0.5 * ExtDelAIC)
@@ -300,12 +276,10 @@ rownames(ExtAICTable) <- c("3dry_diaeq",
                            "3dry_null_diaeq", 
                            "2dry_diaeq", 
                            "2dry_null_diaeq", 
-                           "1dry",
-                           "1dry_null",
                            "2div_diaeq", 
                            "2div_null_diaeq", 
-                           "1div",
-                           "1div_null")
+                           "1",
+                           "1_null")
 ExtAICTable %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC)
 
 #save and read top model ####

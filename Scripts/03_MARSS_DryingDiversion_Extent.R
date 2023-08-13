@@ -167,30 +167,21 @@ moddiv_null_2states_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diago
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
 #1 state
-  #1 dry
-moddry_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
+  #1 covariates
+mod_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
                     c=all_cov_matrix$Pred_Dry_1state, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
                     R = "diagonal and equal", x0 = "equal", tinitx = 0)
-  #1 dry null
-moddry_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
+  #1 null
+mod_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
                              Z = matrix(1,3,1), A = matrix(0,3,1), 
                              R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
-  #1 diversion
-moddiv_1state_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
-                      c=all_cov_matrix$Pred_Div_1state, C=C_1state, Z = matrix(1,2,1), A = matrix(0,2,1), 
-                      R = "diagonal and equal", x0 = "equal", tinitx = 0)
-  
-  #1 diversion null
-moddiv_null_1state_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
-                             Z = matrix(1,2,1), A = matrix(0,2,1), 
-                             R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
 #model fits ####
 #replace R.. with R1 = raw NA; R2 = 0s to NA; R3 = log(raw+0.001); R4 0s to NA and log(raw)
 
 #3 states Extent
-  #with NA extent kem does not converge
+ 
 start.time <- Sys.time()
 Extent_3states_dry <- MARSS(y = Extent_DryR3, model = moddry_3states_qdiaeq, 
                                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
@@ -229,30 +220,18 @@ Extent_null_2states_div <- MARSS(Extent_DivR3, model = moddiv_null_2states_qdiae
 Extent_null_2states_div_BFGS <- MARSS(y = Extent_DivR3, model = moddiv_null_2states_qdiaeq, control = list(maxit = 5000), 
                                  method = "BFGS", inits = Extent_null_2states_div$par)
 
-#1 states Extent
-Extent_1state_dry <- MARSS(Extent_DryR3, model = moddry_1state_qdiaeq, 
+#1 state Extent
+Extent_1state <- MARSS(Extent_DryR3, model = mod_1state_qdiaeq, 
                                  control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                 conv.test.slope.tol = 0.09),fit = T) 
-Extent_1state_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_1state_qdiaeq, control = list(maxit = 5000), 
-                                 method = "BFGS", inits = Extent_1state_dry$par)
+Extent_1state_BFGS <- MARSS(y = Extent_DryR3, model = mod_1state_qdiaeq, control = list(maxit = 5000), 
+                                 method = "BFGS", inits = Extent_1state$par)
 
-Extent_null_1state_dry <- MARSS(Extent_DryR3, model = moddry_null_1state_qdiaeq, 
+Extent_null_1state <- MARSS(Extent_DryR3, model = mod_null_1state_qdiaeq, 
                                       control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                                      conv.test.slope.tol = 0.09),fit = T) 
-Extent_null_1state_dry_BFGS <- MARSS(y = Extent_DryR3, model = moddry_null_1state_qdiaeq, control = list(maxit = 5000), 
-                                method = "BFGS", inits = Extent_null_1state_dry$par)
-
-Extent_1state_div <- MARSS(Extent_DivR3, model = moddiv_1state_qdiaeq, 
-                                 control = list(maxit = 100, allow.degen = T, safe = T, 
-                                                conv.test.slope.tol = 0.09),fit = T) # Extent trace = 1 error
-Extent_1state_div_BFGS <- MARSS(y = Extent_DivR3, model = moddiv_1state_qdiaeq, control = list(maxit = 5000), 
-                                method = "BFGS", inits = Extent_1state_div$par)
-
-Extent_null_1state_div <- MARSS(Extent_DivR3, model = moddiv_null_1state_qdiaeq, 
-                                 control = list(maxit = 100, allow.degen = T, safe = T, 
-                                                conv.test.slope.tol = 0.09), fit = T) # Extent trace = 1 error
-Extent_null_1state_div_BFGS <- MARSS(y = Extent_DivR3, model = moddiv_null_1state_qdiaeq, control = list(maxit = 5000), 
-                                method = "BFGS", inits = Extent_null_1state_div$par)
+Extent_null_1state_BFGS <- MARSS(y = Extent_DryR3, model = mod_null_1state_qdiaeq, control = list(maxit = 5000), 
+                                method = "BFGS", inits = Extent_null_1state$par)
 
 beep(1)
 end.time <- Sys.time()
@@ -263,12 +242,10 @@ Extent_AIC <- c(Extent_3states_dry_BFGS$AICc,
                 Extent_null_3states_dry_BFGS$AICc, 
                 Extent_2states_dry_BFGS$AICc, 
                 Extent_null_2states_dry_BFGS$AICc, 
-                Extent_1state_dry_BFGS$AICc,
-                Extent_null_1state_dry_BFGS$AICc,
                 Extent_2states_div_BFGS$AICc, 
                 Extent_null_2states_div_BFGS$AICc, 
-                Extent_1state_div_BFGS$AICc,
-                Extent_null_1state_div_BFGS$AICc)
+                Extent_1state_BFGS$AICc,
+                Extent_null_1state_BFGS$AICc)
 
 ExtDelAIC <- Extent_AIC - min(Extent_AIC)
 ExtRelLik <- exp(-0.5 * ExtDelAIC)
@@ -279,12 +256,10 @@ rownames(ExtAICTable) <- c("3dry_diaeq",
                            "3dry_null_diaeq", 
                            "2dry_diaeq", 
                            "2dry_null_diaeq", 
-                           "1dry",
-                           "1dry_null",
                            "2div_diaeq", 
                            "2div_null_diaeq", 
-                           "1div",
-                           "1div_null")
+                           "1",
+                           "1_null")
 ExtAICTable %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC)
 
 #save and read top model ####

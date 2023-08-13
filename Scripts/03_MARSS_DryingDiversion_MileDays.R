@@ -11,8 +11,67 @@ library(beepr)
 
 #read predictor data ####
 
-dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T) 
-dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T)
+dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T) %>% 
+  mutate(NAMileDays = MileDays) %>% 
+  mutate_at(c('NAMileDays'), ~na_if(., 0)) %>% 
+  mutate(LogMileDays = log(MileDays+0.0001),
+         LogNAMileDays = log(NAMileDays))
+dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T) %>% 
+  mutate(NAMileDays = MileDays) %>% 
+  mutate_at(c('NAMileDays'), ~na_if(., 0)) %>% 
+  mutate(LogMileDays = log(MileDays+0.0001),
+         LogNAMileDays = log(NAMileDays))
+
+#response distribution plots #####
+dat_DryR %>% 
+  group_by(Reach) %>% 
+  mutate(zLogMileDays = (LogMileDays - mean(LogMileDays, na.rm = TRUE))/ sd(LogMileDays, na.rm = TRUE)) %>% 
+  mutate(zMileDays = (MileDays - mean(MileDays, na.rm = TRUE))/ sd(MileDays, na.rm = TRUE)) %>% 
+  ggplot(aes(zLogMileDays))+
+  geom_histogram()+
+  facet_wrap(vars(Reach), scales = "free_x")
+
+dat_DivR %>% 
+  group_by(Reach) %>% 
+  mutate(zLogMileDays = (LogMileDays - mean(LogMileDays, na.rm = TRUE))/ sd(LogMileDays, na.rm = TRUE)) %>% 
+  mutate(zMileDays = (MileDays - mean(MileDays, na.rm = TRUE))/ sd(MileDays, na.rm = TRUE)) %>% 
+  ggplot(aes(zLogMileDays))+
+  geom_histogram()+
+  facet_wrap(vars(Reach))
+
+#response MileDays ####
+
+#reduce to irrigation season, zscore, pivot, and transform to matrix by reach function 
+predictor_func <- function(data, predictor){
+  result <- 
+    as.matrix(data %>% 
+                mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>% 
+                filter(between(month(Date), 4,10)) %>% 
+                select(Date, {{predictor}}, Reach) %>% 
+                group_by(Reach) %>% 
+                mutate(zMileDays = ({{predictor}} - mean({{predictor}}, na.rm=TRUE)) / sd({{predictor}}, na.rm=TRUE)) %>% 
+                select(!{{predictor}}) %>% 
+                pivot_wider(names_from = Date, values_from = zMileDays) %>% 
+                column_to_rownames(var = "Reach"))
+  
+  return(result)
+}
+
+#drying reaches
+MileDays_DryR1 <- predictor_func(dat_DryR, MileDays)
+MileDays_DryR2 <- predictor_func(dat_DryR, NAMileDays)
+MileDays_DryR3 <- predictor_func(dat_DryR, LogMileDays)
+MileDays_DryR4 <- predictor_func(dat_DryR, LogNAMileDays)
+
+#diversion reaches
+MileDays_DivR1 <- predictor_func(dat_DivR, MileDays)
+MileDays_DivR2 <- predictor_func(dat_DivR, NAMileDays)
+MileDays_DivR3 <- predictor_func(dat_DivR, LogMileDays)
+MileDays_DivR4 <- predictor_func(dat_DivR, LogNAMileDays)
+
+#creating a time series of first predictive variable
+MileDays_DivR <- ts(MileDays_DivR1, frequency = 365)
+plot(MileDays_DivR[1,])
 
 #covariates ####
   #already zscored and reduced to irrigation season (months 4-10)
@@ -27,35 +86,6 @@ all_cov_matrix <- lapply(all_cov_data, function(x) as.matrix(x))
   #check z-scoring
 apply(all_cov_matrix$Pred_Div_1state, 1, var)
 
-#response Extent and MileDays ####
-
-#BECAUSE THESE ARE COUNTS DO I HAVE TO NATURAL LOG AND DEAL WITH NEGATIVE IN EXTENT CHANGE?
-#Can add absolute value of the most negative number to all change extent so the most negative number become 0 and shifts everything else up
-
-#reduce to irrigation season, zscore, pivot, and transform to matrix by reach function 
-predictor_func <- function(data, predictor){
-  result <- 
-    as.matrix(data %>% 
-                mutate(Date = as.Date(Date, format = "%Y-%m-%d")) %>% 
-                filter(between(month(Date), 4,10)) %>% 
-                select(Date, {{predictor}}, Reach) %>% 
-                group_by(Reach) %>% 
-                mutate(zExtent = ({{predictor}} - mean({{predictor}}, na.rm=TRUE)) / sd({{predictor}}, na.rm=TRUE)) %>% 
-                select(!{{predictor}}) %>% 
-                pivot_wider(names_from = Date, values_from = zExtent) %>% 
-                column_to_rownames(var = "Reach"))
-  
-  return(result)
-}
-
- #drying reaches
-MileDays_DryR <- predictor_func(dat_DryR, MileDays)
-  #diversion reaches
-MileDays_DivR <- predictor_func(dat_DivR, MileDays)
-
-#creating a time series of first predictive variable
-MileDays_DivR <- ts(MileDays_DivR, frequency = 365)
-plot(MileDays_DivR[1,])
 
 #C matrices ####
 
@@ -104,163 +134,173 @@ Z_2states <- matrix(0,3,2); Z_2states[1,1] <- 1;Z_2states[2,1] <- 1; Z_2states[3
 #model lists ####
 #3 states
 
-  #3 dry cumulative this is for daily dry variable
+  #3 dry 
 moddry_3statescum_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and equal",
                               c=all_cov_matrix$PredCum_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_3statescum_qdiauneq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and unequal",
-                                c=all_cov_matrix$PredCum_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
-                                R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_3statescum_qdiavarcov <- list(B = "identity", U = matrix(0,3,1), Q = "equalvarcov",
-                                  c=all_cov_matrix$PredCum_Dry_3states, C=C_3states, Z = "identity", A = matrix(0,3,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
-  #3 dry cumulative null this is for daily dry variable
+  #3 drynull 
 moddry_null_3statescum_qdiaeq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and equal",
                                  Z = "identity", A = matrix(0,3,1), 
                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_null_3statescum_qdiauneq <- list(B = "identity", U = matrix(0,3,1), Q = "diagonal and unequal",
-                                    Z = "identity", A = matrix(0,3,1), 
-                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_null_3statescum_qdiavarcov <- list(B = "identity", U = matrix(0,3,1), Q = "equalvarcov",
-                                     Z = "identity", A = matrix(0,3,1), 
-                                     R = "diagonal and equal", x0 = "equal", tinitx = 0)
+
 #2 states
 
-  #2 dry cum this is for daily dry variable
+  #2 dry cum 
 moddry_2statescum_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
                               c=all_cov_matrix$PredCum_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_2statescum_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                c=all_cov_matrix$PredCum_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
-                                R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_2statescum_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                  c=all_cov_matrix$PredCum_Dry_2states, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
-  #2 dry cum null this is for daily dry variable
+
+  #2 dry cum null 
 moddry_null_2statescum_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
                                  Z = Z_2states, A = matrix(0,3,1), 
                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_null_2statescum_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                   Z = Z_2states, A = matrix(0,3,1), 
-                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddry_null_2statescum_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                     Z = Z_2states, A = matrix(0,3,1), 
-                                     R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
    #2 diversion cum
 moddiv_2statescum_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
                               c=all_cov_matrix$PredCum_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddiv_2statescum_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                c=all_cov_matrix$PredCum_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
-                                R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddiv_2statescum_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                  c=all_cov_matrix$PredCum_Div_2states, C=C_2states, Z = "identity", A = matrix(0,2,1), 
-                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 diversion cum null
 moddiv_null_2statescum_qdiaeq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and equal",
                                  Z = "identity", A = matrix(0,2,1), 
                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddiv_null_2statescum_qdiauneq <- list(B = "identity", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                   Z = "identity", A = matrix(0,2,1), 
-                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
-moddiv_null_2statescum_qdiavarcov <- list(B = "identity", U = matrix(0,2,1), Q = "equalvarcov",
-                                     Z = "identity", A = matrix(0,2,1), 
-                                     R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
 #1 state
   #1 dry cum
-moddry_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
+mod_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
                              c=all_cov_matrix$PredCum_Dry_1state, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
                              R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #1 dry cum null
-moddry_null_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
+mod_null_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and equal",
                                 Z = matrix(1,3,1), A = matrix(0,3,1), 
                                 R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
-  #1 diversion cum
-moddiv_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
-                            c=all_cov_matrix$PredCum_Div_1state, C=C_1state, Z = matrix(1,2,1), A = matrix(0,2,1), 
-                            R = "diagonal and equal", x0 = "equal", tinitx = 0)
-
-  #1 diversion cum null
-moddiv_null_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
-                                Z = matrix(1,2,1), A = matrix(0,2,1), 
-                                R = "diagonal and equal", x0 = "equal", tinitx = 0)
-
-#model fits Mile Days ####
+#model fits ####
+#replace R.. with R1 = raw NA; R2 = 0s to NA; R3 = log(raw+0.001); R4 0s to NA and log(raw)
 
 #3 state Daily days
-#beep("ping")
-MD_3states_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_3statescum_qdiaeq)
-MD_3states_dry_diauneq <- MARSS(MileDays_DryR, model = moddry_3statescum_qdiauneq)
-MD_3states_dry_diavarcov <- MARSS(MileDays_DryR, model = moddry_3statescum_qdiavarcov)
+start.time <- Sys.time()
 
-MD_null_3states_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_null_3statescum_qdiaeq)
-MD_null_3states_dry_diauneq <- MARSS(MileDays_DryR, model = moddry_null_3statescum_qdiauneq)
-MD_null_3states_dry_diavarcov <- MARSS(MileDays_DryR, model = moddry_null_3statescum_qdiavarcov)
-beep(3)
+MD_3states_dry <- MARSS(MileDays_DryR4, model = moddry_3statescum_qdiaeq, 
+                               control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                              conv.test.slope.tol = 0.09), fit = T) # R2 R matrix has to be 0
+  MD_3states_dry_BFGS <- MARSS(y = MileDays_DryR4, model = moddry_3statescum_qdiaeq, control = list(maxit = 5000), 
+                                 method = "BFGS", inits = MD_3states_dry$par) 
 
-#2 state Daily days
-MD_2states_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_2statescum_qdiaeq)
-MD_2states_dry_diauneq <- MARSS(MileDays_DryR, model = moddry_2statescum_qdiauneq)
-MD_2states_dry_diavarcov <- MARSS(MileDays_DryR, model = moddry_2statescum_qdiavarcov)
+MD_null_3states_dry <- MARSS(MileDays_DryR4, model = moddry_null_3statescum_qdiaeq, 
+                                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                   conv.test.slope.tol = 0.09), fit = T) # R2 R matrix has to be 0
+  MD_null_3states_dry_BFGS <- MARSS(y = MileDays_DryR4, model = moddry_null_3statescum_qdiaeq, control = list(maxit = 5000), 
+                             method = "BFGS", inits = MD_null_3states_dry$par) 
+#2 state MileDays
+  #dry
+MD_2states_dry <- MARSS(MileDays_DryR4, model = moddry_2statescum_qdiaeq, 
+                               control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                              conv.test.slope.tol = 0.09), fit = T) #R2 error R matrix 0 (over-determined), works diaeq
+  MD_2states_dry_BFGS <- MARSS(y = MileDays_DryR4, model = moddry_2statescum_qdiaeq, control = list(maxit = 5000), 
+                             method = "BFGS", inits = MD_2states_dry$par)
 
-MD_null_2states_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_null_2statescum_qdiaeq)
-MD_null_2states_dry_diauneq <- MARSS(MileDays_DryR, model = moddry_null_2statescum_qdiauneq)
-MD_null_2states_dry_diavarcov <- MARSS(MileDays_DryR, model = moddry_null_2statescum_qdiavarcov)
-beep(3)
+MD_null_2states_dry <- MARSS(MileDays_DryR4, model = moddry_null_2statescum_qdiaeq, 
+                                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                   conv.test.slope.tol = 0.09), fit = T) #R2 error R matrix 0 (over-determined), works diaeq
+  MD_null_2states_dry_BFGS <- MARSS(y = MileDays_DryR4, model = moddry_null_2statescum_qdiaeq, control = list(maxit = 5000), 
+                             method = "BFGS", inits = MD_null_2states_dry$par)
 
-MD_2states_div_qdiaeq <- MARSS(MileDays_DivR, model = moddiv_2statescum_qdiaeq)
-MD_2states_div_diauneq <- MARSS(MileDays_DivR, model = moddiv_2statescum_qdiauneq)
-MD_2states_div_diavarcov <- MARSS(MileDays_DivR, model = moddiv_2statescum_qdiavarcov)
+  #div
+MD_2states_div <- MARSS(MileDays_DivR4, model = moddiv_2statescum_qdiaeq, 
+                               control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                              conv.test.slope.tol = 0.09), fit = T) # R2 R matrix has to be 0
+  MD_2states_div_BFGS <- MARSS(y = MileDays_DivR4, model = moddiv_2statescum_qdiaeq, control = list(maxit = 5000), 
+                                  method = "BFGS", inits = MD_2states_div$par) 
 
-MD_null_2states_div_qdiaeq <- MARSS(MileDays_DivR, model = moddiv_null_2statescum_qdiaeq)
-MD_null_2states_div_diauneq <- MARSS(MileDays_DivR, model = moddiv_null_2statescum_qdiauneq)
-MD_null_2states_div_diavarcov <- MARSS(MileDays_DivR, model = moddiv_null_2statescum_qdiavarcov)
-beep(3)
-#1 state Daily days
-MD_1state_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_1statecum_qdiaeq)
-MD_null_1state_dry_qdiaeq <- MARSS(MileDays_DryR, model = moddry_null_1statecum_qdiaeq)
+MD_null_2states_div <- MARSS(MileDays_DivR4, model = moddiv_null_2statescum_qdiaeq, 
+                                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                                   conv.test.slope.tol = 0.09), fit = T) # R2 R matrix has to be 0
+  MD_null_2states_div_BFGS <- MARSS(y = MileDays_DivR4, model = moddiv_null_2statescum_qdiaeq, control = list(maxit = 5000), 
+                             method = "BFGS", inits = MD_null_2states_div$par) 
 
-MD_1state_div_qdiaeq <- MARSS(MileDays_DivR, model = moddiv_1statecum_qdiaeq)
-MD_null_1state_div_qdiaeq <- MARSS(MileDays_DivR, model = moddiv_null_1statecum_qdiaeq)
-beep(3)
+#1 state Mile Days
+MD_1state <- MARSS(MileDays_DryR4, model = mod_1statecum_qdiaeq, 
+                          control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                         conv.test.slope.tol = 0.09), fit = T) #R2 error R matrix 0 (over-determined), works diaeq
+  MD_1state_BFGS <- MARSS(y = MileDays_DryR4, model = mod_1statecum_qdiaeq, control = list(maxit = 5000), 
+                                  method = "BFGS", inits = MD_1state$par)
+
+MD_null_1state <- MARSS(MileDays_DryR4, model = mod_null_1statecum_qdiaeq, 
+                               control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                              conv.test.slope.tol = 0.09), fit = T)
+  MD_null_1state_BFGS <- MARSS(y = MileDays_DryR4, model = mod_null_1statecum_qdiaeq, control = list(maxit = 5000), 
+                        method = "BFGS", inits = MD_null_1state$par)
+
+beep(1)
+end.time <- Sys.time()
+print(round(end.time - start.time,2))
+
+
 #AIC ####
 #Mile Days
-MD_AIC <- c(MD_3states_dry_qdiaeq$AICc, MD_3states_dry_diauneq$AICc, MD_3states_dry_diavarcov$AICc,
-                MD_null_3states_dry_qdiaeq$AICc, MD_null_3states_dry_diauneq$AICc, MD_null_3states_dry_diavarcov$AICc,
-                MD_2states_dry_qdiaeq$AICc, MD_2states_dry_diauneq$AICc, MD_2states_dry_diavarcov$AICc,
-                MD_null_2states_dry_qdiaeq$AICc, MD_null_2states_dry_diauneq$AICc, MD_null_2states_dry_diavarcov$AICc, 
-                MD_1state_dry_diaeq$AICc,
-                MD_null_1state_dry_diaeq$AICc,
-                MD_2states_div_qdiaeq$AICc, MD_2states_div_diauneq$AICc, MD_2states_div_diavarcov$AICc,
-                MD_null_2states_div_qdiaeq$AICc, MD_null_2states_div_diauneq$AICc, MD_null_2states_div_diavarcov$AICc,
-                MD_1state_div_diaeq$AICc,
-                MD_null_1state_div_diaeq$AICc)
+MD_AIC <- c(MD_3states_dry_BFGS$AICc, 
+                MD_null_3states_dry_BFGS$AICc, 
+                MD_2states_dry_BFGS$AICc, 
+                MD_null_2states_dry_BFGS$AICc, 
+                MD_2states_div_BFGS$AICc, 
+                MD_null_2states_div_BFGS$AICc, 
+                MD_1state_BFGS$AICc,
+                MD_null_1state_BFGS$AICc)
 
 ExtDelAIC <- MD_AIC - min(MD_AIC)
 ExtRelLik <- exp(-0.5 * ExtDelAIC)
 ExtAICWeight <- ExtRelLik/sum(ExtRelLik)
 ExtAICTable <- data.frame(AICc = MD_AIC, delAIC = ExtDelAIC, relLike = ExtRelLik,
                           weight = ExtAICWeight)
-rownames(ExtAICTable) <- c("3dry_diaeq", "3dry_diuneq", "3dry_varcov",
-                           "3dry_null_diaeq", "3dry_null_diuneq", "3dry_null_varcov",
-                           "2dry_diaeq", "2dry_diuneq", "2dry_varcov",
-                           "2dry_null_diaeq", "2dry_null_diuneq", "2dry_null_varcov",
-                           "1dry",
-                           "1dry_null",
-                           "2div_diaeq", "2div_diuneq", "2div_varcov",
-                           "2div_null_diaeq", "2div_null_diuneq", "2div_null_varcov",
+rownames(ExtAICTable) <- c("3dry_diaeq", 
+                           "3dry_null_diaeq", 
+                           "2dry_diaeq", 
+                           "2dry_null_diaeq", 
+                           "2div_diaeq", 
+                           "2div_null_diaeq", 
                            "1div",
                            "1div_null")
 ExtAICTable %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC)
 
-#save top model
-# saveRDS(Extent_2states_div_diauneq, "ModelOutput/TopExtentMod_2Div_Uneq.rds")
-# mod <- readRDS("ModelOutput/TopExtentMod_2Div_Uneq.rds")
-# summary(Extent_2states_div_diauneq)
+#save top model and read ####
+#replace R.. with R1 = raw NA; R2 = 0s to NA; R3 = log(raw+0.001); R4 0s to NA and log(raw)
+
+saveRDS(MD_3states_dry_BFGS, "ModelOutput/Top_MDMod_BFGS.rds") # ~6 min R1 raw
+saveRDS(MD_3states_dry_BFGS, "ModelOutput/Top_MDNAMod_BFGS.rds") # ~9 min R2 NAs raw had to vary R matrix some
+saveRDS(MD_3states_dry_BFGS, "ModelOutput/Top_MDLogMod_BFGS.rds") # ~6 min R3 lograw
+saveRDS(MD_3states_dry_BFGS, "ModelOutput/Top_MDLogNAMod_BFGS.rds") # ~10 min R4 logNAraw
+
+mod1 <- readRDS("ModelOutput/Top_MDMod_BFGS.rds") #not horrible, not good neg residuals and thus Q-Q plot, first ACF bad and rest good (so maybe ok)
+mod2 <- readRDS("ModelOutput/Top_MDNAMod_BFGS.rds") #bad acf
+mod3 <- readRDS("ModelOutput/Top_MDLogMod_BFGS.rds") # not good neg and pos residuals and Q-Q, first ACF bad and rest good (so maybe ok)
+mod4 <- readRDS("ModelOutput/Top_MDLogMod_BFGS.rds") # same as lograw (mod3)
+
+#residuals ####
+autoplot.marssMLE(mod1)
+
+#model output####
+summary(mod1)
+predict(mod1)
+fitted(mod3)
+preds <- predict(mod1,
+                 interval = "confidence",
+                 se.fit = TRUE) #another way to get estimate and CIs
+
+#plotting
+conf_marss1 <- fitted(mod1, type = "ytT", interval = "confidence")
+pred_marss1 <- fitted(mod3, type = "ytT", interval = "prediction")
+df <- cbind(conf_marss1, pred_marss1[, c(".lwr", ".upr")]) %>% 
+  rename(Reach = 1)
+
+ggplot(df, aes(x = t, y = .fitted)) +
+  geom_ribbon(aes(ymin = .lwr, ymax = .upr), fill = "grey") +
+  geom_ribbon(aes(ymin = .conf.low, ymax = .conf.up), fill = "blue", alpha = 0.25) +
+  geom_line(linetype = 2) +
+  facet_grid(vars(Reach))+
+  ylab("Predicted Mile Days") +
+  xlab("") +
+  ggtitle("Rio Grande")
 
