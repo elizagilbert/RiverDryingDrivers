@@ -12,11 +12,14 @@ library(beepr)
 #read predictor data ####
 
 dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T) %>% 
+  select(Date, Reach, MileDays) %>% 
   mutate(NAMileDays = MileDays) %>% 
   mutate_at(c('NAMileDays'), ~na_if(., 0)) %>% 
   mutate(LogMileDays = log(MileDays+0.0001),
-         LogNAMileDays = log(NAMileDays))
+         LogNAMileDays = log(NAMileDays)) 
+
 dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T) %>% 
+  select(Date, Reach, MileDays) %>% 
   mutate(NAMileDays = MileDays) %>% 
   mutate_at(c('NAMileDays'), ~na_if(., 0)) %>% 
   mutate(LogMileDays = log(MileDays+0.0001),
@@ -70,7 +73,7 @@ MileDays_DivR3 <- predictor_func(dat_DivR, LogMileDays)
 MileDays_DivR4 <- predictor_func(dat_DivR, LogNAMileDays)
 
 #creating a time series of first predictive variable
-MileDays_DivR <- ts(MileDays_DivR1, frequency = 365)
+MileDays_DivR <- ts(MileDays_DivR5, frequency = 365)
 plot(MileDays_DivR[1,])
 
 #covariates ####
