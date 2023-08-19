@@ -12,24 +12,13 @@ library(forecast)
 
 #read predictor data ####
 #testing model output of log transformations with and without 0s as NAs
-lambda1 <- BoxCox.lambda(dat_DryR$Extent)
 
-dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T) %>% 
-  select(Date, Extent, ExtentChng, Reach) %>% 
-  mutate(Extent2 = case_when(ExtentChng > 5 ~ NA_real_,
-                             ExtentChng < -5 ~ NA_real_,
-                             TRUE ~ Extent)) %>% 
-  mutate(LogExtent = log(Extent2 + 1.01)) %>% 
-  mutate(BoxExtent = BoxCox(Extent, lambda1))
-
-lambda2 <- BoxCox.lambda(dat_DivR$Extent)
 dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T) %>% 
-  select(Date, Extent, ExtentChng,Reach) %>% 
-  mutate(Extent2 = case_when(ExtentChng > 5 ~ NA_real_,
-                             ExtentChng < -5 ~ NA_real_,
-                             TRUE ~ Extent))%>% 
-  mutate(LogExtent = log(Extent + 1.01))%>% 
-  mutate(BoxExtent = BoxCox(Extent, lambda2))
+  mutate(Date = as.Date(Date, formate = "%Y-%m-%d"),
+         Year = year(Date)) %>%
+  filter(between(Year, 2011, 2018))%>% 
+  select(Date, Extent, ExtentChng,Reach)  
+  
 
 sum(is.na(dat_DivR$Extent2))
 sum(is.na(dat_DryR$Extent2))
@@ -61,6 +50,10 @@ names(all_cov_data) <- sub('\\.csv', '', basename(cov_file_list))
 all_cov_data <- lapply(all_cov_data, function(x) column_to_rownames(x, var = "X"))
 all_cov_matrix <- lapply(all_cov_data, function(x) as.matrix(x))
 
+cov <- read.csv("Data/Processed/DivR_ET.csv")
+cov2 <- as.matrix(data.frame(cov[,-1], row.names=cov[,1]))
+
+
   #check z-scoring
 apply(all_cov_matrix$Pred_Div_2states, 1, var)
 
@@ -83,11 +76,11 @@ predictor_func <- function(data, predictor){
 }
 
  #drying reaches
-Extent_DryR1 <- predictor_func(dat_DryR, Extent2)
+Extent_DryR1 <- predictor_func(dat_DryR, Extent)
 Extent_DryR2 <- predictor_func(dat_DryR, LogExtent)
 
   #diversion reaches
-Extent_DivR1 <- predictor_func(dat_DivR, Extent2)
+Extent_DivR1 <- predictor_func(dat_DivR, Extent)
 Extent_DivR2 <- predictor_func(dat_DivR, LogExtent)
 
 #creating a time series of first predictive variable
@@ -101,10 +94,11 @@ C_3states <- matrix(0,3,15)
 diag3 <- function(x) {
   C_3dis <- matrix(list(0),3,3); diag(C_3dis) <- "dis"
   C_3div <- matrix(list(0),3,3); diag(C_3div) <- "div"
+  C_3et <- matrix(list(0), 3,3); diag(C_3et) <- "et"
   C_3precip <- matrix(list(0),3,3); diag(C_3precip) <- "precip"
   C_3ret <- matrix(list(0),3,3); diag(C_3ret) <- "ret"
   C_3temp <- matrix(list(0),3,3); diag(C_3temp) <- "temp"
-  C_3states <- cbind(C_3dis, C_3div,C_3precip, C_3ret, C_3temp)
+  C_3states <- cbind(C_3dis, C_3div, C_3et, C_3precip, C_3ret, C_3temp)
   C_3states
 }
 C_3states <- diag3(C_3states)
@@ -114,10 +108,11 @@ C_2states <- matrix(0,2,10)
 diag2 <- function(x) {
   C_2dis <- matrix(list(0),2,2); diag(C_2dis) <- "dis"
   C_2div <- matrix(list(0),2,2); diag(C_2div) <- "div"
+  C_2et <- matrix(list(0),2,2); diag(C_2et) <- "et"
   C_2precip <- matrix(list(0),2,2); diag(C_2precip) <- "precip"
   C_2ret <- matrix(list(0),2,2); diag(C_2ret) <- "ret"
   C_2temp <- matrix(list(0),2,2); diag(C_2temp) <- "temp"
-  C_2states <- cbind(C_2dis, C_2div,C_2precip, C_2ret, C_2temp)
+  C_2states <- cbind(C_2dis, C_2div, C_2et, C_2precip, C_2ret, C_2temp)
   C_2states
 }
 C_2states <- diag2(C_2states)
@@ -127,6 +122,7 @@ C_1state <- matrix(0,1,5)
 diag1 <- function(x) {
   C_1dis <- matrix(list(0),1,1); diag(C_1dis) <- "dis"
   C_1div <- matrix(list(0),1,1); diag(C_1div) <- "div"
+  C_1et <- matrix(list(0),1,1); diag(C_1et) <- "et"
   C_1precip <- matrix(list(0),1,1); diag(C_1precip) <- "precip"
   C_1ret <- matrix(list(0),1,1); diag(C_1ret) <- "ret"
   C_1temp <- matrix(list(0),1,1); diag(C_1temp) <- "temp"
@@ -141,22 +137,22 @@ Z_2states <- matrix(0,3,2); Z_2states[1,1] <- 1;Z_2states[2,1] <- 1; Z_2states[3
 #model lists ####
   #3 states dry
 moddry_3states_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,3,1), Q = "diagonal and equal",
-                        c=all_cov_matrix$Pred_Dry_3statesReduced, C=C_3states, Z = "identity", A = matrix(0,3,1), 
+                        c=cov, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                         R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 states dry
 moddry_2states_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "diagonal and equal",
-                              c=all_cov_matrix$Pred_Dry_2statesReduced, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
+                              c=cov, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 states diversion
 moddiv_2states_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "diagonal and equal",
-                              c=all_cov_matrix$Pred_Div_2statesReduced, C=C_2states, Z = "identity", A = matrix(0,2,1), 
+                              c=cov2, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #1 state
 mod_1state_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,1,1), Q = "diagonal and equal",
-                    c=all_cov_matrix$Pred_Dry_1stateReduced, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
+                    c=cov, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
                     R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
 
@@ -203,6 +199,7 @@ autoplot.marssMLE(Extent_2states_dry_BFGS) #logoffset residuals bad, and acf hor
 autoplot.marssMLE(Extent_2states_div_BFGS) #logoffset residuals bad, but acf not bad at all 
                                            #slightly better than raw, acf bettern than when -5 to 5 are included
                                            #BoxCox transformation no good
+                                           #adding ET from old ET toolbox data didn't help either  
 autoplot.marssMLE(Extent_1state_BFGS)      #logoffset residuals not as bad, acf horrible
 
 #save and read models ####
