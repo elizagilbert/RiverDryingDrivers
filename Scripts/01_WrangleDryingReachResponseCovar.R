@@ -212,10 +212,10 @@ Returns_R2 <- dat_returns %>%
   ungroup() %>% 
   select(Returns_cfs, ReturnsCum_cfs, ReturnsChng_cfs)
 
-#Returns (gage called At State Hwy 346 near Bosque Farms)
+#Returns (using upper most gage in Reach 2 called At State Hwy 346 near Bosque Farms)
 Discharge_R2 <- dat_discharge %>% 
   mutate(dateTime = as.Date(dateTime, format = "%Y-%m-%d")) %>% 
-  filter(site_no == "8331510" | site_no == "8332010" & dateTime <= "2021-12-31") %>% 
+  filter(site_no == "8331510" & dateTime <= "2021-12-31") %>% 
   complete(dateTime = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>%
   filter(dateTime >= "2010-01-01") %>%
   group_by(dateTime) %>% 
@@ -352,8 +352,7 @@ Returns_R3 <- dat_returns %>%
 #There are 3 or possible 4 that I could use and I haven't decided....
 Discharge_R3 <- dat_discharge %>% 
   mutate(dateTime = as.Date(dateTime, format = "%Y-%m-%d")) %>% 
-  filter(site_no == "8354900" | site_no == "8355050" | site_no == "8355490" &
-           dateTime <= "2021-12-31") %>% 
+  filter(site_no == "8355490" & dateTime <= "2021-12-31") %>% 
   complete(dateTime = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>%
   filter(dateTime >= "2010-01-01") %>% arrange(dateTime) %>%  
   group_by(dateTime) %>% 

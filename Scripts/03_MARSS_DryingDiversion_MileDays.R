@@ -68,7 +68,7 @@ all_cov_data <- lapply(all_cov_data, function(x) column_to_rownames(x, var = "X"
 all_cov_matrix <- lapply(all_cov_data, function(x) as.matrix(x))
 
   #check z-scoring
-apply(all_cov_matrix$Pred_Div_1state, 1, var)
+apply(all_cov_matrix$Pred_Dry_1state, 1, var)
 
 
 #C matrices ####
@@ -139,7 +139,6 @@ mod_1statecum_qdiaeq <- list(B = matrix(1), U = matrix(0,1,1), Q = "diagonal and
 
 
 #model fits ####
-#replace R.. with R1 = raw NA; R2 = 0s to NA; R3 = log(raw+0.001); R4 0s to NA and log(raw)
 
 start.time <- Sys.time()
   #3 states MileDays dry
@@ -176,18 +175,26 @@ beep(1)
 end.time <- Sys.time()
 print(round(end.time - start.time,2))
 
+#saveRDS(MD_1state_BFGS, "ModelOutput/MileDays/1stateMod_MD_BFGS.rds") # 
 
-#AIC ####
-#Mile Days
+#read in model outputs ####
 MD_3states_dry_BFGS <- readRDS("ModelOutput/MileDays/3statesMod_MD_BFGS.rds")
 MD_2states_dry_BFGS <- readRDS("ModelOutput/MileDays/2statesDryMod_MD_BFGS.rds")
 MD_2states_div_BFGS <- readRDS("ModelOutput/MileDays/2statesDivMod_MD_BFGS.rds")
 MD_1state_BFGS <- readRDS("ModelOutput/MileDays/1stateMod_MD_BFGS.rds")
 
+#residuals ####
+autoplot.marssMLE(MD_3states_dry_BFGS) # good
+autoplot.marssMLE(MD_2states_dry_BFGS) # no good, residuals not horrible, acf is bad
+autoplot.marssMLE(MD_2states_div_BFGS) # good
+autoplot.marssMLE(MD_1state_BFGS)      # no good, residuals not horrible, acf is bad
+
+#AIC ####
 MD_AIC <- c(MD_3states_dry_BFGS$AICc, 
             #MD_2states_dry_BFGS$AICc, 
-            #MD_2states_div_BFGS$AICc, 
-            MD_1state_BFGS$AICc)
+            MD_2states_div_BFGS$AICc
+            #MD_1state_BFGS$AICc
+)
 
 ExtDelAIC <- MD_AIC - min(MD_AIC)
 ExtRelLik <- exp(-0.5 * ExtDelAIC)
@@ -196,28 +203,24 @@ ExtAICTable <- data.frame(AICc = MD_AIC, delAIC = ExtDelAIC, relLike = ExtRelLik
                           weight = ExtAICWeight)
 rownames(ExtAICTable) <- c("3dry_diaeq", 
                            #"2dry_diaeq", 
-                           #"2div_diaeq",
-                           "1state")
+                           "2div_diaeq"
+                           #"1state"
+)
 ExtAICTable %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC)
-
-#read top mod ####
-
-mod1 <- readRDS("ModelOutput/Top_MDMod_BFGS.rds") #not horrible, not good neg residuals and thus Q-Q plot, first ACF bad and rest good (so maybe ok)
-
-#residuals ####
-autoplot.marssMLE(MD_3states_dry_BFGS)
 
 #model output####
 summary(MD_3states_dry_BFGS)
-predict(mod1)
-fitted(mod3)
-preds <- predict(mod1,
+MARSSparamCIs(MD_3states_dry_BFGS) #parameter estimates for discharge, diversion, and returns overlap 0
+
+predict(MD_3states_dry_BFGS)
+fitted(MD_3states_dry_BFGS)
+preds <- predict(MD_3states_dry_BFGS,
                  interval = "confidence",
                  se.fit = TRUE) #another way to get estimate and CIs
 
 #plotting
-conf_marss1 <- fitted(mod1, type = "ytT", interval = "confidence")
-pred_marss1 <- fitted(mod3, type = "ytT", interval = "prediction")
+conf_marss1 <- fitted(MD_3states_dry_BFGS, type = "ytT", interval = "confidence")
+pred_marss1 <- fitted(MD_3states_dry_BFGS, type = "ytT", interval = "prediction")
 df <- cbind(conf_marss1, pred_marss1[, c(".lwr", ".upr")]) %>% 
   rename(Reach = 1)
 

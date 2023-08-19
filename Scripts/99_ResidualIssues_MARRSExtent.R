@@ -8,36 +8,52 @@ library(tidyverse)
 library(lubridate)
 library(zoo)
 library(beepr)
+library(forecast)
 
 #read predictor data ####
 #testing model output of log transformations with and without 0s as NAs
+lambda1 <- BoxCox.lambda(dat_DryR$Extent)
+
 dat_DryR <- read.csv("Data/Processed/DryingSubreachData.csv", header = T) %>% 
-  select(Date, Extent, Reach) %>% 
-  mutate(LogExtent = log(Extent + 1.01)) 
+  select(Date, Extent, ExtentChng, Reach) %>% 
+  mutate(Extent2 = case_when(ExtentChng > 5 ~ NA_real_,
+                             ExtentChng < -5 ~ NA_real_,
+                             TRUE ~ Extent)) %>% 
+  mutate(LogExtent = log(Extent2 + 1.01)) %>% 
+  mutate(BoxExtent = BoxCox(Extent, lambda1))
+
+lambda2 <- BoxCox.lambda(dat_DivR$Extent)
 dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T) %>% 
-  select(Date, Extent, Reach) %>% 
-  mutate(LogExtent = log(Extent + 1.01)) 
+  select(Date, Extent, ExtentChng,Reach) %>% 
+  mutate(Extent2 = case_when(ExtentChng > 5 ~ NA_real_,
+                             ExtentChng < -5 ~ NA_real_,
+                             TRUE ~ Extent))%>% 
+  mutate(LogExtent = log(Extent + 1.01))%>% 
+  mutate(BoxExtent = BoxCox(Extent, lambda2))
+
+sum(is.na(dat_DivR$Extent2))
+sum(is.na(dat_DryR$Extent2))
 
 #response distribution plots #####
 dat_DryR %>% 
   group_by(Reach) %>% 
   mutate(zLogExtent = (LogExtent - mean(LogExtent, na.rm = TRUE))/ sd(LogExtent, na.rm = TRUE)) %>% 
-  mutate(zExtent = (Extent - mean(Extent, na.rm = TRUE))/ sd(Extent, na.rm = TRUE)) %>% 
-  ggplot(aes(zLogExtent))+
+  mutate(zExtent = (Extent2 - mean(Extent2, na.rm = TRUE))/ sd(Extent2, na.rm = TRUE)) %>% 
+  ggplot(aes(zExtent))+
   geom_histogram()+
   facet_wrap(vars(Reach), scales = "free_x")
 
 dat_DivR %>% 
   group_by(Reach) %>% 
   mutate(zLogExtent = scale(LogExtent)) %>% 
-  mutate(zExtent = (Extent - mean(Extent, na.rm = TRUE))/ sd(Extent, na.rm = TRUE)) %>% 
-  ggplot(aes(zLogExtent))+
+  mutate(zExtent = (Extent2 - mean(Extent2, na.rm = TRUE))/ sd(Extent2, na.rm = TRUE)) %>% 
+  ggplot(aes(zExtent))+
   geom_histogram()+
   facet_wrap(vars(Reach))
 
 #covariates ####
   #already zscored and reduced to irrigation season (months 4-10)
-cov_file_list <- list.files("Data/Processed/MARSS_Covariates/Reduced", full.names = T, pattern = "*.csv")
+cov_file_list <- list.files("Data/Processed/MARSS_Covariates/Temp", full.names = T, pattern = "*.csv")
 all_cov_data <- lapply(cov_file_list, function(file){
   df <- read.csv(file)
 })
@@ -46,7 +62,7 @@ all_cov_data <- lapply(all_cov_data, function(x) column_to_rownames(x, var = "X"
 all_cov_matrix <- lapply(all_cov_data, function(x) as.matrix(x))
 
   #check z-scoring
-apply(all_cov_matrix$Pred_Div_1state, 1, var)
+apply(all_cov_matrix$Pred_Div_2states, 1, var)
 
 #response ####
 
@@ -67,15 +83,15 @@ predictor_func <- function(data, predictor){
 }
 
  #drying reaches
-Extent_DryR1 <- predictor_func(dat_DryR, Extent)
+Extent_DryR1 <- predictor_func(dat_DryR, Extent2)
 Extent_DryR2 <- predictor_func(dat_DryR, LogExtent)
 
   #diversion reaches
-Extent_DivR1 <- predictor_func(dat_DivR, Extent)
+Extent_DivR1 <- predictor_func(dat_DivR, Extent2)
 Extent_DivR2 <- predictor_func(dat_DivR, LogExtent)
 
 #creating a time series of first predictive variable
-Extent_DryR_ts <- ts(Extent_DivR2, frequency = 365)
+Extent_DryR_ts <- ts(Extent_DivR1, frequency = 365)
 plot(Extent_DryR_ts[1,])
 
 #C matrices ####
@@ -124,22 +140,22 @@ Z_2states <- matrix(0,3,2); Z_2states[1,1] <- 1;Z_2states[2,1] <- 1; Z_2states[3
 
 #model lists ####
   #3 states dry
-moddry_3states_qdiaeq <- list(B = "unconstrained", U = matrix(0,3,1), Q = "diagonal and equal",
+moddry_3states_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,3,1), Q = "diagonal and equal",
                         c=all_cov_matrix$Pred_Dry_3statesReduced, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                         R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 states dry
-moddry_2states_qdiaeq <- list(B = "unconstrained", U = matrix(0,2,1), Q = "diagonal and equal",
+moddry_2states_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "diagonal and equal",
                               c=all_cov_matrix$Pred_Dry_2statesReduced, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 states diversion
-moddiv_2states_qdiaeq <- list(B = "unconstrained", U = matrix(0,2,1), Q = "diagonal and equal",
+moddiv_2states_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "diagonal and equal",
                               c=all_cov_matrix$Pred_Div_2statesReduced, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #1 state
-mod_1state_qdiaeq <- list(B = "unconstrained", U = matrix(0,1,1), Q = "diagonal and equal",
+mod_1state_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,1,1), Q = "diagonal and equal",
                     c=all_cov_matrix$Pred_Dry_1stateReduced, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
                     R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
@@ -181,10 +197,13 @@ beep(1)
 end.time <- Sys.time()
 print(round(end.time - start.time,2))
 
-autoplot.marssMLE(Extent_3states_dry_BFGS)
-autoplot.marssMLE(Extent_2states_dry_BFGS)
-autoplot.marssMLE(Extent_2states_div_BFGS)
-autoplot.marssMLE(Extent_1state_BFGS)
+#residuals ####
+autoplot.marssMLE(Extent_3states_dry_BFGS) #logoffset residuals bad, but acf not totally horrible
+autoplot.marssMLE(Extent_2states_dry_BFGS) #logoffset residuals bad, and acf horrible
+autoplot.marssMLE(Extent_2states_div_BFGS) #logoffset residuals bad, but acf not bad at all 
+                                           #slightly better than raw, acf bettern than when -5 to 5 are included
+                                           #BoxCox transformation no good
+autoplot.marssMLE(Extent_1state_BFGS)      #logoffset residuals not as bad, acf horrible
 
 #save and read models ####
 saveRDS(Extent_3states_dry_BFGS, "ModelOutput/Extent/Extent_3states_dry_BFGS.rds") # 

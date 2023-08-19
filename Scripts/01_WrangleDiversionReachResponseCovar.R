@@ -166,8 +166,7 @@ Returns_R1 <- dat_returns %>%
 #Discharge
 Discharge_R1 <- dat_discharge %>% 
   mutate(dateTime = as.Date(dateTime, format = "%Y-%m-%d")) %>% 
-  filter(site_name == "BosqueFarms" | site_name == "StateHwy346" | site_name == "Bernardo"
-         & dateTime <= "2021-12-31") %>% 
+  filter(site_name == "BosqueFarms" & dateTime <= "2021-12-31") %>% 
   complete(dateTime = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>%
   filter(dateTime >= "2010-01-01") %>%
   group_by(dateTime) %>% 
@@ -308,8 +307,7 @@ Returns_R2 <- dat_returns %>%
 #Discharge (gage called At State Hwy 346 near Bosque Farms)
 Discharge_R2 <- dat_discharge %>% 
   mutate(dateTime = as.Date(dateTime, format = "%Y-%m-%d")) %>% 
-  filter(site_name == "San Acacia" | site_name == "Escondida" | site_name == "SanAntonio" 
-         & dateTime <= "2021-12-31") %>% 
+  filter(site_name == "SanAntonio" & dateTime <= "2021-12-31") %>% 
   complete(dateTime = seq.Date(as.Date("2002-01-01"), as.Date("2021-12-31"), by = "day")) %>%
   filter(dateTime >= "2010-01-01") %>%
   group_by(site_name) %>% 
