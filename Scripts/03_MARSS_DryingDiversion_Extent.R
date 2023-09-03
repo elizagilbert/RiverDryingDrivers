@@ -124,22 +124,22 @@ Z_2states <- matrix(0,3,2); Z_2states[1,1] <- 1;Z_2states[2,1] <- 1; Z_2states[3
 
 #model lists ####
   #3 states dry
-moddry_3states_qdiaeq <- list(B = "unconstrained", U = matrix(0,3,1), Q = "diagonal and equal",
+moddry_3states_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,3,1), Q = "diagonal and equal",
                         c=all_cov_matrix$Pred_Dry_3statesReduced, C=C_3states, Z = "identity", A = matrix(0,3,1), 
                         R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 states dry
-moddry_2states_qdiaeq <- list(B = "unconstrained", U = matrix(0,2,1), Q = "diagonal and equal",
+moddry_2states_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "diagonal and equal",
                               c=all_cov_matrix$Pred_Dry_2statesReduced, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #2 states diversion
-moddiv_2states_qdiaeq <- list(B = "unconstrained", U = matrix(0,2,1), Q = "diagonal and equal",
+moddiv_2states_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "diagonal and equal",
                               c=all_cov_matrix$Pred_Div_2statesReduced, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                               R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
   #1 state
-mod_1state_qdiaeq <- list(B = "unconstrained", U = matrix(0,1,1), Q = "diagonal and equal",
+mod_1state_qdiaeq <- list(B = "diagonal and equal", U = matrix(0,1,1), Q = "diagonal and equal",
                     c=all_cov_matrix$Pred_Dry_1stateReduced, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
                     R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
@@ -183,7 +183,7 @@ print(round(end.time - start.time,2))
 
 autoplot.marssMLE(Extent_3states_dry_BFGS)
 autoplot.marssMLE(Extent_2states_dry_BFGS)
-autoplot.marssMLE(Extent_2states_div_BFGS)
+autoplot.marssMLE(Extent_2states_div_BFGS) #best but not great with all B variations
 autoplot.marssMLE(Extent_1state_BFGS)
 
 #save and read models ####
@@ -198,13 +198,12 @@ Extent_2states_div_BFGS <- readRDS("ModelOutput/Extent/Extent_2states_div_BFGS.r
 Extent_1state_BFGS <- readRDS("ModelOutput/Extent/Extent_1state_BFGS.rds")
 
 #residuals ####
-autoplot.marssMLE(Extent_2states_div_BFGS)
 
 plot(Extent_2states_div_BFGS) #this give a slightly different picture than autoplot
 Preds <- predict(Extent_2states_div_BFGS)$pred %>% 
   mutate(Resid = y - estimate) 
 
-write.csv(Preds, "Data/Processed/PredsExtDiv.csv", row.names = F)
+#write.csv(Preds, "Data/Processed/PredsExtDiv.csv", row.names = F)
 
 
 

@@ -1,6 +1,6 @@
 #Read me ####
 #The purpose of this data wrangle Response and Predictors for 
-#Drying subreaches: R1 = > river mile 150, R2 = 130.1 to 150, R2 = 74 to 130
+#Drying subreaches: R1 = > river mile 150, R2 = 130.1 to 150, R3 = 74 to 130
 #Dry = 0, Wet = 1
 #There are rounding errors after 2019 in the response variables
 #Climate variables interpolated

@@ -184,6 +184,7 @@ MD_2states_div_BFGS <- readRDS("ModelOutput/MileDays/2statesDivMod_MD_BFGS.rds")
 MD_1state_BFGS <- readRDS("ModelOutput/MileDays/1stateMod_MD_BFGS.rds")
 
 #residuals ####
+#raw data better than log offset
 autoplot.marssMLE(MD_3states_dry_BFGS) # good
 autoplot.marssMLE(MD_2states_dry_BFGS) # no good, residuals not horrible, acf is bad
 autoplot.marssMLE(MD_2states_div_BFGS) # good
@@ -210,7 +211,7 @@ ExtAICTable %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC)
 
 #model output####
 summary(MD_3states_dry_BFGS)
-MARSSparamCIs(MD_3states_dry_BFGS) #parameter estimates for discharge, diversion, and returns overlap 0
+MARSSparamCIs(MD_2states_div_BFGS) #parameter estimates for discharge, diversion, and returns overlap 0
 
 predict(MD_3states_dry_BFGS)
 fitted(MD_3states_dry_BFGS)

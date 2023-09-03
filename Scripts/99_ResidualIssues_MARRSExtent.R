@@ -16,7 +16,7 @@ library(forecast)
 dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T) %>% 
   mutate(Date = as.Date(Date, formate = "%Y-%m-%d"),
          Year = year(Date)) %>%
-  filter(between(Year, 2011, 2018))%>% 
+  filter(between(month(Date), 4, 10)) %>% 
   select(Date, Extent, ExtentChng,Reach)  
   
 
@@ -50,7 +50,7 @@ names(all_cov_data) <- sub('\\.csv', '', basename(cov_file_list))
 all_cov_data <- lapply(all_cov_data, function(x) column_to_rownames(x, var = "X"))
 all_cov_matrix <- lapply(all_cov_data, function(x) as.matrix(x))
 
-cov <- read.csv("Data/Processed/DivR_ET.csv")
+cov <- read.csv("Data/Processed/temp.csv")
 cov2 <- as.matrix(data.frame(cov[,-1], row.names=cov[,1]))
 
 
@@ -107,12 +107,12 @@ C_3states <- diag3(C_3states)
 C_2states <- matrix(0,2,10)  
 diag2 <- function(x) {
   C_2dis <- matrix(list(0),2,2); diag(C_2dis) <- "dis"
+  C_2dist <- matrix(list(0),2,2); diag(C_2dist) <- "dist"
   C_2div <- matrix(list(0),2,2); diag(C_2div) <- "div"
-  C_2et <- matrix(list(0),2,2); diag(C_2et) <- "et"
   C_2precip <- matrix(list(0),2,2); diag(C_2precip) <- "precip"
   C_2ret <- matrix(list(0),2,2); diag(C_2ret) <- "ret"
   C_2temp <- matrix(list(0),2,2); diag(C_2temp) <- "temp"
-  C_2states <- cbind(C_2dis, C_2div, C_2et, C_2precip, C_2ret, C_2temp)
+  C_2states <- cbind(C_2dis, C_2dist, C_2div, C_2precip, C_2ret, C_2temp)
   C_2states
 }
 C_2states <- diag2(C_2states)
@@ -197,9 +197,10 @@ print(round(end.time - start.time,2))
 autoplot.marssMLE(Extent_3states_dry_BFGS) #logoffset residuals bad, but acf not totally horrible
 autoplot.marssMLE(Extent_2states_dry_BFGS) #logoffset residuals bad, and acf horrible
 autoplot.marssMLE(Extent_2states_div_BFGS) #logoffset residuals bad, but acf not bad at all 
-                                           #slightly better than raw, acf bettern than when -5 to 5 are included
+                                           #slightly better than raw, acf better when -5 to 5 are not included
                                            #BoxCox transformation no good
-                                           #adding ET from old ET toolbox data didn't help either  
+                                           #adding ET from old ET toolbox data didn't help either 
+                                           #adding distance from discharge gage to upper drying helped a little but not much, didn't fix acf
 autoplot.marssMLE(Extent_1state_BFGS)      #logoffset residuals not as bad, acf horrible
 
 #save and read models ####
