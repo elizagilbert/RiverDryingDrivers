@@ -20,7 +20,7 @@ dat_DivR <- read.csv("Data/Processed/DiversionSubreachData.csv", header = T) %>%
 
 #response distribution plots #####
 dat_DryR %>% 
-  group_by(Reach) %>% 
+  group_by(Reach) %>%  
   mutate(zLogExtent = (LogExtent - mean(LogExtent, na.rm = TRUE))/ sd(LogExtent, na.rm = TRUE)) %>% 
   mutate(zExtent = (Extent - mean(Extent, na.rm = TRUE))/ sd(Extent, na.rm = TRUE)) %>% 
   ggplot(aes(zLogExtent))+
@@ -183,7 +183,7 @@ print(round(end.time - start.time,2))
 
 autoplot.marssMLE(Extent_3states_dry_BFGS)
 autoplot.marssMLE(Extent_2states_dry_BFGS)
-autoplot.marssMLE(Extent_2states_div_BFGS) #best but not great with all B variations
+autoplot.marssMLE(Extent_2states_div_BFGS) #best but not great with all B variations better than rolling averages for acf
 autoplot.marssMLE(Extent_1state_BFGS)
 
 #save and read models ####
