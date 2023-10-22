@@ -1,6 +1,6 @@
 #Read me ####
-#The purpose of this data wrangle Response and Predictors for 
-#Diversion reaches: R1 = > river mile 116, R2 = 116 to 74
+#The purpose of this script is to data wrangle Response and Predictors for 
+#a model of the river as one spatial extent
 #Dry = 0, Wet = 1
 
 #Libraries ####
@@ -44,7 +44,7 @@ predictor_func <- function(data, predictor){
   return(result)
 }
 
-MileDays_DivR <- predictor_func(MileDays_df, MileDays)
+MileDays_dat<- predictor_func(MileDays_df, MileDays)
 
 #data covariates ####
 dat_TempPrecip_LosLunas <- read.csv("Data/Raw/TempPrecip_LosLunas_GHCNDUSC00295150.csv") %>%
@@ -84,7 +84,7 @@ dat_discharge <- read.csv("Data/Processed/USGS_discharge.csv") %>%
   filter(site_name != "Bernardo" & site_name != "LfccSanMarcial" & site_name != "RioPuerco" &
            site_name !="SanAntonio")
 
-#Temp Precip 1 state diversions ####
+#Temp Precip 1 river ####
 
 Temp_Precip <- dat_TempPrecip_All %>% 
   arrange(Date) %>% 
@@ -106,14 +106,14 @@ Temp_Precip <- dat_TempPrecip_All %>%
   ungroup() %>% 
   select(TempCum_C, PrecipCum_mm)
 
-Precip_Div1State <- Temp_Precip %>% 
+Precip_1River <- Temp_Precip %>% 
   select(PrecipCum_mm)
 
-Temp_Div1State <- Temp_Precip %>% 
+Temp_1River <- Temp_Precip %>% 
   select(TempCum_C)
 
-#Discharge 1 state diversions ####
-Discharge_Div1State <- dat_discharge %>% 
+#Discharge 1 river ####
+Discharge_1River <- dat_discharge %>% 
   filter(between (Date, as.Date("2010-01-01"), as.Date("2021-12-31"))) %>% 
   group_by(site_name) %>% 
   complete(Date = seq.Date(as.Date("2010-01-01"), as.Date("2021-12-31"), by = "day")) %>% 
@@ -129,8 +129,8 @@ Discharge_Div1State <- dat_discharge %>%
   ungroup() %>% 
   select(Date, DischargeCum_cfs) 
 
-#Diversion 1 state diversions ####
-Diversions_Div1State <- dat_diversions %>% 
+#Diversion 1 river ####
+Diversions_1River <- dat_diversions %>% 
   filter(between (Date, as.Date("2010-01-01"), as.Date("2021-12-31"))) %>% 
   filter(between (month(Date), 4,10)) %>% 
   group_by(DivName) %>% 
@@ -146,8 +146,8 @@ Diversions_Div1State <- dat_diversions %>%
   ungroup() %>% 
   select(Date, DiversionCum)
 
-#Returns 1 state diversion ####
-Returns__Div1State <- dat_returns %>% 
+#Returns 1 river  ####
+Returns_1River <- dat_returns %>% 
   filter(Date >= "2010-01-01") %>% 
   filter(between (month(Date), 4,10)) %>% 
   group_by(Date) %>% 
@@ -161,7 +161,7 @@ Returns__Div1State <- dat_returns %>%
   select(ReturnsCum_cfs)
 
 #Combine 1 state diverison ####
-temp_df <- cbind(Discharge_Div1State, Diversions_Div1State, Temp_Div1State, Returns__Div1State, Precip_Div1State)
+temp_df <- cbind(Discharge_1River, Diversions_1River, Temp_1River, Returns_1River, Precip_1River)
 
 Cov_matrix <- as.matrix(temp_df %>% 
   pivot_longer(cols = DischargeCum_cfs:PrecipCum_mm, names_to = "Predictor", values_to = "Values") %>% 
@@ -198,10 +198,10 @@ mod_1state <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
 
 start.time <- Sys.time()
 
-MD_1state_div_ <- MARSS(MileDays_DivR, model = mod_1state, 
+MD_1state_div_ <- MARSS(MileDays_dat, model = mod_1state, 
                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
                                   conv.test.slope.tol = 0.09), fit = T) 
-MD_1state_BFGS <- MARSS(y = MileDays_DivR, model = mod_1state, control = list(maxit = 5000), 
+MD_1state_BFGS <- MARSS(y = MileDays_dat, model = mod_1state, control = list(maxit = 5000), 
                         method = "BFGS", inits = MD_1state_div_$par) 
 
 
@@ -210,11 +210,11 @@ end.time <- Sys.time()
 print(round(end.time - start.time,2))
 
 #save model
-saveRDS(MD_1state_BFGS, "ModelOutput/MD_1River_BFGS.rds")
-MD_1state_BFGS <- readRDS("ModelOutput/MD_1River_BFGS.rds")
+saveRDS(MD_1state_BFGS, "ModelOutput/MileDays/MD_1River_BFGS.rds")
+MD_1state_BFGS <- readRDS("ModelOutput/MileDays/MD_1River_BFGS.rds")
 
 #residuals
-autoplot.marssMLE(MD_1state_BFGS)
+autoplot.marssMLE(MD_1state_BFGS) #good
 MARSSparamCIs(MD_1state_BFGS)
 
 

@@ -45,89 +45,30 @@ fit_multivariate_model <- function(df, covariates) {
 
 
 # List of data frames
-list_of_data_frames <- matrices_list_MD  # Replace with your actual data frames
+list_of_data_frames <- matrices_list_MD  
 
 # List of covariates
-list_of_covariates <- matrices_list_Cov  # Replace with your actual covariates
+list_of_covariates <- matrices_list_Cov  
 
 # Loop through the lists and fit models
 start.time <- Sys.time()
 results_list <- lapply(1:length(list_of_data_frames), function(i) {
   df <- list_of_data_frames[[i]]
   covariates <- list_of_covariates[[i]]
-  model <- fit_multivariate_model(df, covariates)  # Pass any additional parameters
+  model <- fit_multivariate_model(df, covariates)  
   return(model)
 })
 end.time <- Sys.time()
 print(round(end.time - start.time,2))
 
-save(results_list, file = "ModelOutput/Randomization2/ResultsList100Samples.RData")
-load("ModelOutput/Randomization2/ResultsList100Samples.RData")
-
-#calculate RMSE ####
-
-# Create a list to store the dataframes for each model
-model_dfs <- list()
-
-# Loop through the 100 models to get fitted values
-for (i in 1:100) {
-  conf_marss <- fitted(results_list[[i]], type = "ytT", interval = "confidence")
-  pred_marss <- fitted(results_list[[i]], type = "ytT", interval = "prediction")
-  
-  df <- cbind(conf_marss, pred_marss[, c(".lwr", ".upr")]) %>% rename(Reach = 1)
-  
-  # Store the dataframe in the list
-  model_dfs[[i]] <- df
-}
-
-# model_dfs now contains a list of dataframes, one for each model
-calculate_RMSE <- function(df) {
-  RMSE <- sqrt(mean((df$y - df$.fitted)^2))
-  return(RMSE)
-}
-
-RMSE_list <- lapply(model_dfs, calculate_RMSE)
-average_RMSE <- mean(unlist(RMSE_list), na.rm = T)
-sd_RMSE <- sd(unlist(RMSE_list), na.rm = T)
-
-average_RMSE
-sd_RMSE
-#calculate R-squared ####
-calculate_Rsquared <- function(df){
-  Sum_resids <- sum((df$y - df$.fitted)^2)
-  TotalSUm_resids <- sum((df$y - mean(df$y))^2)
-  Rsquared <- 1-(Sum_resids/TotalSUm_resids)
-  return(Rsquared)
-}
-
-Rsquared_list <- lapply(model_dfs, calculate_Rsquared)
-average_Rsquared <- mean(unlist(Rsquared_list), na.rm = T)
-average_Rsquared
-
-sd_Rsquared <- sd(unlist(Rsquared_list), na.rm = T)
-sd_Rsquared
-
-calculate_AdjRsquared <- function(df){
-  n <- 10
-  k <- 5
-  Sum_resids <- sum((df$y - df$.fitted)^2)
-  TotalSUm_resids <- sum((df$y - mean(df$y))^2)
-  Rsquared <- 1-(Sum_resids/TotalSUm_resids)
-  adjusted_Rsquared <- 1-((1-Rsquared) * (n-1) / (n-k-1))
-  return(adjusted_Rsquared)
-} 
-
-Adj_Rsquared_list <- lapply(model_dfs, calculate_AdjRsquared)
-average_AjdRsquared <- mean(unlist(Adj_Rsquared_list), na.rm = T)
-average_AjdRsquared
-
-
+save(results_list, file = "ModelOutput/Random100/ResultsList100Samples.RData")
+load("ModelOutput/Random100/ResultsList100Samples.RData")
 
 #calculate mean and CIs ####
-# load("ModelOutput/Randomization2/ResultsList5Samples.RData")
+# load("ModelOutput/Random100/ResultsList5Samples.RData")
 
 model_params <- lapply(results_list, MARSSparamCIs)
-save(model_params, file = "ModelOutput/Randomization2/ModelParams100samples.RData")
+save(model_params, file = "ModelOutput/Random100/ModelParams100samples.RData")
 
 model_coefs <- data.frame(lapply(model_params, function (x) `[`(x, c('coef'))))
 
