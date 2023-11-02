@@ -37,7 +37,7 @@ ggplot(temp, aes(x = ExtentChng, y = Resid))+
 
   #extent by covariates
 dat %>% 
-  select(Date, Extent, Precip_mm, Temp_C, Discharge_cfs, Diversion_cfs, Returns_cfs) %>% 
+  select(Date, Reach, Extent, Precip_mm, Temp_C, Discharge_cfs, Diversion_cfs, Returns_cfs) %>% 
   pivot_longer(Precip_mm:Returns_cfs, names_to = "covs", values_to = "pred_values") %>% 
   ggplot(aes(x = pred_values, y = Extent))+
   geom_point()+
@@ -45,7 +45,7 @@ dat %>%
 
    #lead extent by covariates
 dat %>%  
-  select(Date, Extent, Precip_mm, Temp_C, Discharge_cfs, Diversion_cfs, Returns_cfs) %>% 
+  select(Date, Reach, Extent, Precip_mm, Temp_C, Discharge_cfs, Diversion_cfs, Returns_cfs) %>% 
   mutate(leadExtent = lead(Extent, 1))%>% #applied 1 - 14 days some response by discharge/return 
   pivot_longer(Precip_mm:Returns_cfs, names_to = "covs", values_to = "pred_values") %>% 
   ggplot(aes(x = pred_values, y = leadExtent))+
@@ -54,14 +54,14 @@ dat %>%
 
 #random
 dat %>% 
-  select(Date, Extent, Discharge_cfs) %>% 
+  select(Date, Reach, Extent, Discharge_cfs) %>% 
   ggplot(aes(x = Discharge_cfs, y=Extent))+
   geom_point()+
   facet_wrap(~Reach)+
   scale_x_continuous(limits = (c(0, 750)))
 
 dat %>% 
-  select(Date, Extent, Discharge_cfs) %>% 
+  select(Date, Reach, Extent, Discharge_cfs) %>% 
   pivot_longer(Extent:Discharge_cfs, names_to = "Variables", values_to = "values") %>% 
   ggplot(aes(x = Date, y = values))+
   geom_line()+
@@ -69,12 +69,14 @@ dat %>%
   ggtitle("Entire Year")
 
 dat %>% 
-  filter(Reach == "R2") %>% 
+  #filter(Reach == "R2") %>% 
   ggplot(aes(x = Discharge_cfs, y = Extent))+
   geom_point()+
   geom_path()+
-  #facet_wrap(~Reach)+
-  scale_x_continuous(limits = (c(0, 100)))
+  facet_wrap(~Reach)+
+  scale_x_continuous(limits = (c(0, 800)))+
+  ylab("Daily extent of drying (# river miles)")+
+  xlab("Discharge from nearest downstream gage from diversion dam (cfs)")
 
 dat %>% 
   ggplot(aes(x = Diversion_cfs, y = Returns_cfs))+
