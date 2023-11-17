@@ -7,8 +7,8 @@ library(tidyverse)
 library(MARSS)
 
 #Load Data ####
-load("Data/Processed/Radomization2/matrices_list_MD100.RData")
-load("Data/Processed/Radomization2/matrices_list_Cov100.RData")
+load("Data/Processed/Random100/matrices_list_MD100.RData")
+load("Data/Processed/Random100/matrices_list_Cov100.RData")
 
 #check z-scoring ####
 apply(matrices_list_Cov[[1]], 1, var)
@@ -32,7 +32,7 @@ C_10states <- diag10(C_10states)
 # Define your modeling function
 fit_multivariate_model <- function(df, covariates) {
   
-  modlist_10states <- list(B = "diagonal and unequal", U = matrix(0,10,1), Q = "diagonal and unequal",
+  modlist_10states <- list(B = "diagonal and equal", U = matrix(0,10,1), Q = "diagonal and unequal",
                            c=covariates, C=C_10states, Z = "identity", A = matrix(0,10,1), 
                            R = "diagonal and equal", x0 = "equal", tinitx = 0)
   
@@ -69,6 +69,7 @@ load("ModelOutput/Random100/ResultsList100Samples.RData")
 
 model_params <- lapply(results_list, MARSSparamCIs)
 save(model_params, file = "ModelOutput/Random100/ModelParams100samples.RData")
+load("ModelOutput/Random100/ModelParams100samples.RData")
 
 model_coefs <- data.frame(lapply(model_params, function (x) `[`(x, c('coef'))))
 
@@ -85,29 +86,46 @@ para_mean_95CI <- model_coefs %>%
          lower.ci.ceof = mean.coef - qt(1 - (0.05 / 2), n.coef - 1) * se.coef,
          upper.ci.coef = mean.coef + qt(1 - (0.05 / 2), n.coef - 1) * se.coef)
 
+temp1 <- para_mean_95CI %>% select(c(rowname, mean.coef)) %>%
+  rename(Param = 1, MnCoef = 2) %>% 
+  group_by(Param) %>% 
+  summarise(mean = mean(MnCoef))
+  
+temp2 <- model_coefs %>% 
+  rownames_to_column() %>% 
+  rename(Coefficient = 1) %>% 
+  pivot_longer(cols = coef:coef.54, names_to = "Coeff", values_to = "values") %>% 
+  filter(str_detect(Coefficient, "C."))
+
+temp2 %>% 
+  filter(Coefficient == "C.ret") %>% 
+  ggplot(aes(x=values)) + 
+  geom_histogram()
 
 #there is some potential bootstrapping
 #https://www.painblogr.org/2017-10-18-purrring-through-bootstraps.html
 # library(dplyr)
 # library(tidyr)
-# library(purrr)
-# library(boot)
-# 
-# set.seed(321)
-# mtcars %>%
-#   group_by(vs) %>%
-#   nest() %>% 
-#   mutate(boot_res = map(data,
-#                         ~ boot(data = .$mpg,
-#                                statistic = function(x, i) mean(x[i]),
-#                                R = 1000)),
-#          boot_res_ci = map(boot_res, boot.ci, type = "perc"),
-#          mean = map(boot_res_ci, ~ .$t0),
-#          lower_ci = map(boot_res_ci, ~ .$percent[[4]]),
-#          upper_ci = map(boot_res_ci, ~ .$percent[[5]]),
-#          n =  map(data, nrow)) %>% 
-#   select(-data, -boot_res, -boot_res_ci) %>% 
-#   unnest(cols = c(n, mean, lower_ci, upper_ci)) %>% 
-#   ungroup()
+library(purrr)
+library(boot)
+
+
+temp3 <- temp2 %>% 
+  group_by(Coefficient) %>%
+  nest() %>%
+  mutate(boot_res = map(data,
+                        ~ boot(data = .$values,
+                               statistic = function(x, i) mean(x[i]),
+                               R = 1000)),
+         boot_res_ci = map(boot_res, boot.ci, type = "perc"),
+         mean = map(boot_res_ci, ~ .$t0),
+         lower_ci = map(boot_res_ci, ~ .$percent[[4]]),
+         upper_ci = map(boot_res_ci, ~ .$percent[[5]]),
+         n =  map(data, nrow)) %>%
+  select(-data, -boot_res, -boot_res_ci) %>%
+  unnest(cols = c(n, mean, lower_ci, upper_ci)) %>%
+  ungroup()
+
+write.csv(temp3, "Data/Processed/TenReach95CI_booted.csv", row.names = F)
 
 

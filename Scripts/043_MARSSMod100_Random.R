@@ -64,8 +64,8 @@ results_list <- lapply(1:length(list_of_data_frames), function(i) {
 end.time <- Sys.time()
 print(round(end.time - start.time,2))
 
-save(results_list, file = "ModelOutput/Randomization2/ResultsList100Samples.RData")
-load("ModelOutput/Randomization2/ResultsList100Samples.RData")
+save(results_list, file = "ModelOutput/Random100/ResultsList100Samples.RData")
+load("ModelOutput/Random100/ResultsList100Samples.RData")
 
 #calculate RMSE diaun ####
 

@@ -263,7 +263,7 @@ ExtAICTable_Div %>% mutate(across(where(is.numeric),round,0)) %>% arrange(delAIC
 
 #model output####
 summary(MD_2states_div_uncon_BFGS)
-MARSSparamCIs(MD_2states_div_diauneq_BFGS)
+MARSSparamCIs(MD_2states_div_uncon_BFGS)
 
 summary(MD_3states_dry_uncon_BFGS)
-MARSSparamCIs(MD_3states_dry_diauneq_BFGS) 
+MARSSparamCIs(MD_3states_dry_uncon_BFGS) 
