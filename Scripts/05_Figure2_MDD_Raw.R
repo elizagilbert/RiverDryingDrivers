@@ -40,7 +40,7 @@ pl_river <-  ggplot(df3, aes(x = t, y = y, color = Reach))+
   ggtitle(bquote("One reach"))+
   theme_classic()+
   theme(plot.title = element_text(size = 12))+
-  scale_y_continuous(limits = c(-1,8), breaks = c(0, 4, 8))+
+  scale_y_continuous(limits = c(-1,10), breaks = c(0, 5, 10))+
   ylab("z score")+
   xlab("")+
   theme(legend.position = c(0.8, 0.99), legend.direction = "horizontal", axis.text.x = element_blank())+
@@ -49,22 +49,23 @@ pl_river <-  ggplot(df3, aes(x = t, y = y, color = Reach))+
 #two reach
 pl_diverison <-  ggplot(df2, aes(x = t, y = y, color = Reach))+
   geom_line(size = 1)+
-  ggtitle(bquote("Two reaches"))+
+  ggtitle(bquote("Two subreaches"))+
   theme_classic()+
   theme(plot.title = element_text(size = 12))+
-  scale_y_continuous(limits = c(-1,8), breaks = c(0, 4, 8))+
+  scale_y_continuous(limits = c(-1,10), breaks = c(0, 5, 10))+
   ylab("")+
   xlab("")+
-  theme(legend.position = c(0.8, 0.99), legend.direction = "horizontal", axis.text.x = element_blank())+
+  theme(legend.position = c(0.8, 0.99), legend.direction = "horizontal", axis.text.x = element_blank(),
+        axis.text.y = element_blank())+
   scale_color_manual(values = c("#969696", "#252525"), name = "")
 
 #three reaches
 pl_drying <- ggplot(df1, aes(x = t, y = y, color = Reach))+
   geom_line(size = 1)+
-  ggtitle(bquote("Three reaches"))+
+  ggtitle(bquote("Three subreaches"))+
   theme_classic()+
   theme(plot.title = element_text(size = 12))+
-  scale_y_continuous(limits = c(-1,8), breaks = c(0, 4, 8))+
+  scale_y_continuous(limits = c(-1,10), breaks = c(0, 5, 10))+
   ylab("z score")+
   xlab("Time point")+
   theme(legend.position = c(0.75, 0.99), legend.direction = "horizontal")+
@@ -79,13 +80,13 @@ df_ran1$Reach <- factor(df_ran1$Reach, levels = c("R1", "R2", "R3", "R4", "R5",
 
 pl_random1 <- ggplot(df_ran1, aes(x = t, y = y, color = Reach))+
   geom_line(size = 1)+
-  ggtitle(bquote("Ten reaches"))+
+  ggtitle(bquote("Ten subreaches"))+
   theme_classic()+
   theme(plot.title = element_text(size = 12))+
-  scale_y_continuous(limits = c(-1,8), breaks = c(0, 4, 8))+
+  scale_y_continuous(limits = c(-1,10), breaks = c(0, 5, 10))+
   ylab("")+
   xlab("Time point")+
-  theme(legend.position = c(0.55, 0.95), legend.direction = "horizontal")+
+  theme(legend.position = c(0.55, 0.95), legend.direction = "horizontal", axis.text.y = element_blank())+
   scale_color_manual(values = c("#969696", "#252525", "#D9D9D9",
                                 "#525252" ,"#BDBDBD", "#737373", "#A6CEE3", 
                                 "#1F78B4", "#B2DF8A", "#33A02C"), name = "")

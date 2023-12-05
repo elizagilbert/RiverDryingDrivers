@@ -29,6 +29,12 @@ MileDays_df <- dat_drying %>%
   distinct(Date, MileDays, Reach) %>% 
   ungroup(Date) 
 
+
+MileDays_df %>%
+  group_by(year(Date)) %>%
+  summarise(max = max(MileDays)) %>%
+  arrange(max)
+
 predictor_func <- function(data, predictor){
   result <- 
     as.matrix(data %>% 
@@ -106,6 +112,11 @@ Temp_Precip <- dat_TempPrecip_All %>%
   ungroup() %>% 
   select(TempCum_C, PrecipCum_mm)
 
+# Temp_Precip %>%
+#   group_by(year(Date)) %>%
+#   summarise(max = max(PrecipCum_mm)) %>%
+#   arrange(max)
+
 Precip_1River <- Temp_Precip %>% 
   select(PrecipCum_mm)
 
@@ -129,6 +140,12 @@ Discharge_1River <- dat_discharge %>%
   ungroup() %>% 
   select(Date, DischargeCum_cfs) 
 
+
+# Discharge_1River %>%
+#   group_by(year(Date)) %>%
+#   summarise(max = max(DischargeCum_cfs)) %>%
+#   arrange(max)
+
 #Diversion 1 river ####
 Diversions_1River <- dat_diversions %>% 
   filter(between (Date, as.Date("2010-01-01"), as.Date("2021-12-31"))) %>% 
@@ -145,6 +162,11 @@ Diversions_1River <- dat_diversions %>%
   mutate(DiversionCum = cumsum(DiversionTot)) %>% 
   ungroup() %>% 
   select(Date, DiversionCum)
+
+Returns_1River %>%
+  group_by(year(Date)) %>%
+  summarise(max = max(ReturnsCum_cfs)) %>%
+  arrange(max)
 
 #Returns 1 river  ####
 Returns_1River <- dat_returns %>% 
@@ -237,3 +259,5 @@ ggplot(df3, aes(x = t, y = y))+
 Sum_MD_1_resids <- sum((df1$y - df1$.fitted)^2)
 TotalSUm_MD_1_resids <- sum((df1$y - mean(df1$y))^2)
 Rsquared_MD_1 <- 1-(Sum_MD_1_resids/TotalSUm_MD_1_resids)
+
+

@@ -332,3 +332,11 @@ Reach2 <- as.data.frame(cbind(Ext_ExtChng_R2, MileDays_R2, TempPrecip_R2,
 #Final dataframe
 DiversionSubreachData <- rbind(Reach1, Reach2)
 # write.csv(DiversionSubreachData, "Data/Processed/DiversionSubreachData.csv", row.names = F)
+
+
+#percent diverted #####
+temp1 <- as.data.frame(cbind(Discharge_R2$Discharge_cfs, Diversions_R2$Diversion_cfs)) %>% 
+  rename(Dis = 1, Div = 2) %>% 
+  mutate(Total = Dis+Div, PerDiv = ((Div/Total)*100)) %>% 
+  summarise(meanPerDiv = mean(PerDiv, na.rm = T), sdPerDiv = sd(PerDiv, na.rm = T),
+            minPerDive = min(PerDiv, na.rm = T), maxPerDiv = max(PerDiv, na.rm = T))

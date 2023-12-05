@@ -53,7 +53,7 @@ pl_div_parms <- ggplot(para_2div, aes(x =estimate , y = Covariate_name ))+
   theme_classic()+ ylab("Parameter estimate") + xlab("")+
   geom_vline(xintercept = 0, linetype = "dashed")+
   theme(axis.text.y = element_blank())+
-  ggtitle("Two reaches")+ ylab("")
+  ggtitle("Two subreaches")+ ylab("")
 
 #3 drying
 mod_dry_3states <- MARSSparamCIs(mod_dry_3states)
@@ -70,7 +70,7 @@ pl_dry_parms <- ggplot(para_3dry, aes(x = estimate, y = Covariate_name))+
   geom_errorbar(aes(x = estimate, xmin = conf.low, xmax = conf.up))+
   theme_classic()+ ylab("") + xlab("Parameter estimate")+
   geom_vline(xintercept = 0, linetype = "dashed")+
-  ggtitle("Three reaches")+
+  ggtitle("Three subreaches")+
   scale_x_continuous(limits = c(-0.02, 0.04), breaks = c(-0.02, 0.00, 0.02, 0.04))
 
 #random models
@@ -114,7 +114,7 @@ pl_rand_parms <- ggplot(tenreachcoeffs, aes(x = mean, y =  Covariate_name))+
   geom_errorbar(aes(x = mean, xmin = lower_ci, xmax = upper_ci))+
   theme_classic()+ ylab("") + xlab("Parameter estimate")+
   geom_vline(xintercept = 0, linetype = "dashed")+
-  ggtitle("Ten reaches")+
+  ggtitle("Ten subreaches")+
   theme(axis.text.y = element_blank())+
   scale_x_continuous(limits = c(-0.02, 0.04), breaks = c(-0.02, 0.00, 0.02, 0.04))
 
