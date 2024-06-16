@@ -52,7 +52,7 @@ pl_div_parms <- ggplot(para_2div, aes(x =estimate , y = Covariate_name ))+
   geom_errorbar(aes(x = estimate, xmin = conf.low, xmax = conf.up))+
   theme_classic()+ ylab("Parameter estimate") + xlab("")+
   geom_vline(xintercept = 0, linetype = "dashed")+
-  theme(axis.text.y = element_blank())+
+  # theme(axis.text.y = element_blank())+
   ggtitle("Two subreaches")+ ylab("")
 
 #3 drying
@@ -71,6 +71,7 @@ pl_dry_parms <- ggplot(para_3dry, aes(x = estimate, y = Covariate_name))+
   theme_classic()+ ylab("") + xlab("Parameter estimate")+
   geom_vline(xintercept = 0, linetype = "dashed")+
   ggtitle("Three subreaches")+
+  theme(axis.text.y = element_blank())+
   scale_x_continuous(limits = c(-0.02, 0.04), breaks = c(-0.02, 0.00, 0.02, 0.04))
 
 #random models
@@ -115,14 +116,14 @@ pl_rand_parms <- ggplot(tenreachcoeffs, aes(x = mean, y =  Covariate_name))+
   theme_classic()+ ylab("") + xlab("Parameter estimate")+
   geom_vline(xintercept = 0, linetype = "dashed")+
   ggtitle("Ten subreaches")+
-  theme(axis.text.y = element_blank())+
+  # theme(axis.text.y = element_blank())+
   scale_x_continuous(limits = c(-0.02, 0.04), breaks = c(-0.02, 0.00, 0.02, 0.04))
 
 
 tiff("Figures/ModelParameters.jpg", units="in", width=8, height=6, res=300)
 ggdraw()+
-  draw_plot(pl_river_parms, 0, 0.5, 0.5, 0.5)+
-  draw_plot(pl_dry_parms, 0, 0, 0.5, 0.5)+
-  draw_plot(pl_div_parms, 0.5, 0.5, 0.4, 0.5)+
-  draw_plot(pl_rand_parms, 0.5, 0, 0.4, 0.5)
+  draw_plot(pl_div_parms , 0, 0.5, 0.5, 0.5)+
+  draw_plot(pl_rand_parms , 0, 0, 0.5, 0.5)+
+  draw_plot(pl_dry_parms, 0.5, 0.5, 0.4, 0.5)
+  
 dev.off()

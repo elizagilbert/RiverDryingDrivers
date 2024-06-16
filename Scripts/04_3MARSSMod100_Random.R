@@ -8,32 +8,45 @@ library(MARSS)
 
 #Load Data ####
 load("Data/Processed/Random100/matrices_list_MD100.RData")
-load("Data/Processed/Random100/matrices_list_Cov100.RData")
+# load("Data/Processed/Random100/matrices_list_Cov100.RData")
 
 #check z-scoring ####
-apply(matrices_list_Cov[[1]], 1, var)
+# apply(matrices_list_Cov[[1]], 1, var)
 
 #10 states - used 10 random intervals from the 22 river segments of 4.4 miles
-C_10states <- matrix(0,10,50)  
-diag10 <- function(x) {
-  C_10dis <- matrix(list(0),10,10); diag(C_10dis) <- "dis"
-  C_10div <-  matrix(list(0),10,10); diag(C_10div) <- "div"
-  C_10precip <-  matrix(list(0),10,10); diag(C_10precip) <- "precip"
-  C_10ret <-  matrix(list(0),10,10); diag(C_10ret) <- "ret"
-  C_10temp <-  matrix(list(0),10,10); diag(C_10temp) <- "temp"
-  C_10states <- cbind(C_10dis, C_10div,C_10precip, C_10ret, C_10temp)
-  C_10states
-}
-C_10states <- diag10(C_10states)
+# C_10states <- matrix(0,10,50)  
+# diag10 <- function(x) {
+#   C_10dis <- matrix(list(0),10,10); diag(C_10dis) <- "dis"
+#   C_10div <-  matrix(list(0),10,10); diag(C_10div) <- "div"
+#   C_10precip <-  matrix(list(0),10,10); diag(C_10precip) <- "precip"
+#   C_10ret <-  matrix(list(0),10,10); diag(C_10ret) <- "ret"
+#   C_10temp <-  matrix(list(0),10,10); diag(C_10temp) <- "temp"
+#   C_10states <- cbind(C_10dis, C_10div,C_10precip, C_10ret, C_10temp)
+#   C_10states
+# }
+# C_10states <- diag10(C_10states)
 
 #MARSS ####
 
 
 # Define your modeling function
-fit_multivariate_model <- function(df, covariates) {
+# fit_multivariate_model <- function(df, covariates) {
+#   
+#   modlist_10states <- list(B = "diagonal and equal", U = matrix(0,10,1), Q = "diagonal and unequal",
+#                            c=covariates, C=C_10states, Z = "identity", A = matrix(0,10,1), 
+#                            R = "diagonal and equal", x0 = "equal", tinitx = 0)
+#   
+#   mod_temp<- MARSS(y = df, model = modlist_10states, 
+#                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+#                                   conv.test.slope.tol = 0.09), fit = T) 
+#   mod_temp_BFGS <- MARSS(y = df, model = modlist_10states, control = list(maxit = 5000), 
+#                          method = "BFGS", inits = mod_temp$par)
+# }
+
+fit_multivariate_model_null <- function(df, covariates) {
   
   modlist_10states <- list(B = "diagonal and equal", U = matrix(0,10,1), Q = "diagonal and unequal",
-                           c=covariates, C=C_10states, Z = "identity", A = matrix(0,10,1), 
+                           Z = "identity", A = matrix(0,10,1), 
                            R = "diagonal and equal", x0 = "equal", tinitx = 0)
   
   mod_temp<- MARSS(y = df, model = modlist_10states, 
@@ -48,27 +61,36 @@ fit_multivariate_model <- function(df, covariates) {
 list_of_data_frames <- matrices_list_MD  
 
 # List of covariates
-list_of_covariates <- matrices_list_Cov  
+# list_of_covariates <- matrices_list_Cov  
 
 # Loop through the lists and fit models
+# start.time <- Sys.time()
+# results_list <- lapply(1:length(list_of_data_frames), function(i) {
+#   df <- list_of_data_frames[[i]]
+#   covariates <- list_of_covariates[[i]]
+#   model <- fit_multivariate_model_null(df, covariates)  
+#   return(model)
+# })
+# end.time <- Sys.time()
+# print(round(end.time - start.time,2))
+
 start.time <- Sys.time()
-results_list <- lapply(1:length(list_of_data_frames), function(i) {
+results_list_null <- lapply(1:length(list_of_data_frames), function(i) {
   df <- list_of_data_frames[[i]]
-  covariates <- list_of_covariates[[i]]
-  model <- fit_multivariate_model(df, covariates)  
+  model <- fit_multivariate_model_null(df, covariates)  
   return(model)
 })
 end.time <- Sys.time()
 print(round(end.time - start.time,2))
 
-save(results_list, file = "ModelOutput/Random100/ResultsList100Samples.RData")
-load("ModelOutput/Random100/ResultsList100Samples.RData")
+save(results_list_null, file = "ModelOutput/Random100/ResultsList100Samples_null.RData")
+load("ModelOutput/Random100/ResultsList100Samples_null.RData")
 
 #calculate mean and CIs ####
 # load("ModelOutput/Random100/ResultsList5Samples.RData")
 
-model_params <- lapply(results_list, MARSSparamCIs)
-save(model_params, file = "ModelOutput/Random100/ModelParams100samples.RData")
+model_params_null <- lapply(results_list_null, MARSSparamCIs)
+save(model_params_null, file = "ModelOutput/Random100/ModelParams100samples_null.RData")
 load("ModelOutput/Random100/ModelParams100samples.RData")
 
 model_coefs <- data.frame(lapply(model_params, function (x) `[`(x, c('coef'))))

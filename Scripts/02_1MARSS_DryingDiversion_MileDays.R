@@ -100,90 +100,116 @@ diag2 <- function(x) {
 }
 C_2states <- diag2(C_2states)
 
-#1 state
-C_1state <- matrix(0,1,5)  
-diag1 <- function(x) {
-  C_1dis <- matrix(list(0),1,1); diag(C_1dis) <- "dis"
-  C_1div <- matrix(list(0),1,1); diag(C_1div) <- "div"
-  C_1precip <- matrix(list(0),1,1); diag(C_1precip) <- "precip"
-  C_1ret <- matrix(list(0),1,1); diag(C_1ret) <- "ret"
-  C_1temp <- matrix(list(0),1,1); diag(C_1temp) <- "temp"
-  C_1state <- cbind(C_1dis, C_1div,C_1precip, C_1ret, C_1temp)
-  C_1state
-}
-C_1state <- diag1(C_1state)
+# #1 state
+# C_1state <- matrix(0,1,5)  
+# diag1 <- function(x) {
+#   C_1dis <- matrix(list(0),1,1); diag(C_1dis) <- "dis"
+#   C_1div <- matrix(list(0),1,1); diag(C_1div) <- "div"
+#   C_1precip <- matrix(list(0),1,1); diag(C_1precip) <- "precip"
+#   C_1ret <- matrix(list(0),1,1); diag(C_1ret) <- "ret"
+#   C_1temp <- matrix(list(0),1,1); diag(C_1temp) <- "temp"
+#   C_1state <- cbind(C_1dis, C_1div,C_1precip, C_1ret, C_1temp)
+#   C_1state
+# }
+# C_1state <- diag1(C_1state)
 
 #Z for 2 drying states####
-Z_2states <- matrix(0,3,2); Z_2states[1,1] <- 1;Z_2states[2,1] <- 1; Z_2states[3,2] <- 1
+# Z_2states <- matrix(0,3,2); Z_2states[1,1] <- 1;Z_2states[2,1] <- 1; Z_2states[3,2] <- 1
 
 #model lists ####
 
 #3 states dry 
-moddry_3statescum <- list(B = "diagonal and equal", U = matrix(0,3,1), Q = "diagonal and unequal",
-                                 c=all_cov_matrix$PredCum_Dry_3statesReduced, C=C_3states, Z = "identity", A = matrix(0,3,1), 
-                                 R = "diagonal and equal", x0 = "equal", tinitx = 0)
+# moddry_3statescum <- list(B = "diagonal and equal", U = matrix(0,3,1), Q = "unconstrained",
+#                                  c=all_cov_matrix$PredCum_Dry_3statesReduced, C=C_3states, Z = "identity", A = matrix(0,3,1), 
+#                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
+# 
+# moddry_3statescum_null <- list(B = "diagonal and equal", U = matrix(0,3,1), Q = "unconstrained",
+#                           Z = "identity", A = matrix(0,3,1), 
+#                           R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
-#2 states dry
+# #2 states dry
+# 
+# moddry_2statescum <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "diagonal and unequal",
+#                                  c=all_cov_matrix$PredCum_Dry_2statesReduced, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
+#                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
+# 
+# moddry_2statescum <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "diagonal and unequal",
+#                           c=all_cov_matrix$PredCum_Dry_2statesReduced, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
+#                           R = "diagonal and equal", x0 = "equal", tinitx = 0)
+# 
+# #1 state dry
+# moddry_1statecum <- list(B = "diagonal and equal", U = matrix(0,1,1), Q = "diagonal and unequal",
+#                          c=all_cov_matrix$PredCum_Dry_1stateReduced, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
+#                          R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
-moddry_2statescum <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "diagonal and unequal",
-                                 c=all_cov_matrix$PredCum_Dry_2statesReduced, C=C_2states, Z = Z_2states, A = matrix(0,3,1), 
-                                 R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
-#1 state dry
-moddry_1statecum <- list(B = "diagonal and equal", U = matrix(0,1,1), Q = "diagonal and unequal",
-                         c=all_cov_matrix$PredCum_Dry_1stateReduced, C=C_1state, Z = matrix(1,3,1), A = matrix(0,3,1), 
-                         R = "diagonal and equal", x0 = "equal", tinitx = 0)
+
 
 #2 states diversion 
-moddiv_2statescum <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "diagonal and unequal",
+moddiv_2statescum <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "unconstrained",
                                  c=all_cov_matrix$PredCum_Div_2statesReduced, C=C_2states, Z = "identity", A = matrix(0,2,1), 
                                  R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
-#1 state diversion
-moddiv_1statecum <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
-                             c=all_cov_matrix$PredCum_Div_1state, C=C_1state, Z = matrix(1,2,1), A = matrix(0,2,1), 
-                             R = "diagonal and equal", x0 = "equal", tinitx = 0)
+moddiv_2statescum_null <- list(B = "diagonal and equal", U = matrix(0,2,1), Q = "unconstrained",
+                          Z = "identity", A = matrix(0,2,1), 
+                          R = "diagonal and equal", x0 = "equal", tinitx = 0)
+
+# #1 state diversion
+# moddiv_1statecum <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
+#                              c=all_cov_matrix$PredCum_Div_1state, C=C_1state, Z = matrix(1,2,1), A = matrix(0,2,1), 
+#                              R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
 #model fits ####
 
 start.time <- Sys.time()
 #3 states MileDays dry
 
-MD_3states_dry <- MARSS(MileDays_DryR, model = moddry_3statescum, 
-                        control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
-                                       conv.test.slope.tol = 0.09), fit = T) 
-  MD_3states_dry_BFGS <- MARSS(y = MileDays_DryR, model = moddry_3statescum, control = list(maxit = 5000), 
-                             method = "BFGS", inits = MD_3states_dry$par) 
-  
-#2 states MileDays dry
-
-MD_2states_dry <- MARSS(MileDays_DryR, model = moddry_2statescum, 
-                        control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
-                                       conv.test.slope.tol = 0.09), fit = T) 
-  MD_2states_dry_BFGS <- MARSS(y = MileDays_DryR, model = moddry_2statescum, control = list(maxit = 5000), 
-                             method = "BFGS", inits = MD_2states_dry$par) 
-
+# MD_3states_dry_Uncon <- MARSS(MileDays_DryR, model = moddry_3statescum, 
+#                         control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+#                                        conv.test.slope.tol = 0.09), fit = T) 
+#   MD_3states_dry_BFGS_Uncon <- MARSS(y = MileDays_DryR, model = moddry_3statescum, control = list(maxit = 5000), 
+#                              method = "BFGS", inits = MD_3states_dry_Uncon$par) 
+# 
+# MD_3states_dry_Null_Uncon <- MARSS(MileDays_DryR, model = moddry_3statescum_null, 
+#                           control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+#                                          conv.test.slope.tol = 0.09), fit = T) 
+#   MD_3states_dry_BFGS_Null_Uncon <- MARSS(y = MileDays_DryR, model = moddry_3statescum_null, control = list(maxit = 5000), 
+#                                method = "BFGS", inits = MD_3states_dry_Null_Uncon$par)
+# #2 states MileDays dry
+# 
+# MD_2states_dry <- MARSS(MileDays_DryR, model = moddry_2statescum, 
+#                         control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+#                                        conv.test.slope.tol = 0.09), fit = T) 
+#   MD_2states_dry_BFGS <- MARSS(y = MileDays_DryR, model = moddry_2statescum, control = list(maxit = 5000), 
+#                              method = "BFGS", inits = MD_2states_dry$par) 
+# 
 #2 states MileDays diversion
-MD_2states_div <- MARSS(MileDays_DivR, model = moddiv_2statescum, 
-                        control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
-                                       conv.test.slope.tol = 0.09), fit = T) 
-  MD_2states_div_BFGS <- MARSS(y = MileDays_DivR, model = moddiv_2statescum, control = list(maxit = 5000), 
-                             method = "BFGS", inits = MD_2states_div$par) 
-
-
-#1 state MileDays dry
-MD_1state_dry <- MARSS(MileDays_DryR, model = moddry_1statecum, 
-                   control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
-                                  conv.test.slope.tol = 0.09), fit = T) 
-  MD_1state_dry_BFGS <- MARSS(y = MileDays_DryR, model = moddry_1statecum, control = list(maxit = 5000), 
-                        method = "BFGS", inits = MD_1state_dry$par) 
-
-#1 state MileDays dry
-MD_1state_div <- MARSS(MileDays_DivR, model = moddiv_1statecum, 
-                     control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
-                                    conv.test.slope.tol = 0.09), fit = T) 
-  MD_1state_div_BFGS <- MARSS(y = MileDays_DivR, model = moddiv_1statecum, control = list(maxit = 5000), 
-                          method = "BFGS", inits = MD_1state_div$par) 
+MD_2states_div <- MARSS(MileDays_DivR, model = moddiv_2statescum,
+                        control = list(maxit = 100, allow.degen = T, trace =1, safe = T,
+                                       conv.test.slope.tol = 0.09), fit = T)
+  MD_2states_div_BFGS <- MARSS(y = MileDays_DivR, model = moddiv_2statescum, control = list(maxit = 5000),
+                             method = "BFGS", inits = MD_2states_div$par)
+  
+MD_2states_div_null_un <- MARSS(MileDays_DivR, model = moddiv_2statescum_null,
+                          control = list(maxit = 100, allow.degen = T, trace =1, safe = T,
+                                         conv.test.slope.tol = 0.09), fit = T)
+  MD_2states_div_BFGS_null_un <- MARSS(y = MileDays_DivR, model = moddiv_2statescum_null, control = list(maxit = 5000),
+                               method = "BFGS", inits = MD_2states_div_null_un$par)
+# 
+# 
+# #1 state MileDays dry
+# MD_1state_dry <- MARSS(MileDays_DryR, model = moddry_1statecum, 
+#                    control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+#                                   conv.test.slope.tol = 0.09), fit = T) 
+#   MD_1state_dry_BFGS <- MARSS(y = MileDays_DryR, model = moddry_1statecum, control = list(maxit = 5000), 
+#                         method = "BFGS", inits = MD_1state_dry$par) 
+# 
+# #1 state MileDays dry
+# MD_1state_div <- MARSS(MileDays_DivR, model = moddiv_1statecum, 
+#                      control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+#                                     conv.test.slope.tol = 0.09), fit = T) 
+#   MD_1state_div_BFGS <- MARSS(y = MileDays_DivR, model = moddiv_1statecum, control = list(maxit = 5000), 
+#                           method = "BFGS", inits = MD_1state_div$par) 
   
 beep(1)
 end.time <- Sys.time()
@@ -210,3 +236,5 @@ autoplot.marssMLE(MD_2states_div_BFGS) # good, small acf outliers in R1
 autoplot.marssMLE(MD_1state_dry_BFGS)  # no good, residuals not good, acf is bad
 autoplot.marssMLE(MD_1state_div_BFGS)  # no good, residuals not good, acf is bad
 
+MARSSparamCIs(MD_3states_dry_BFGS)
+MARSSparamCIs(MD_3states_dry_BFGS_Null_Unconc)

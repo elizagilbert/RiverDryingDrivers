@@ -36,9 +36,12 @@ dat_TempPrecip_AllOtherLocs <- read.csv("Data/Raw/TempPrecip_AllOtherLocations.c
 dat_TempPrecip_All <- rbind(dat_TempPrecip_LosLunas,
                             dat_TempPrecip_AllOtherLocs)
 
-dat_diversions <- read.csv("Data/Processed/MRGCD_diversion.csv")
-dat_returns <- read.csv("Data/Processed/MRGCD_returns.csv")
-dat_discharge <- read.csv("Data/Processed/USGS_discharge.csv")
+dat_diversions <- read.csv("Data/Processed/MRGCD_diversion.csv") %>% 
+  mutate(MnDischarge_cfs = MnDischarge_cfs*0.02831)
+dat_returns <- read.csv("Data/Processed/MRGCD_returns.csv")%>% 
+  mutate(MnDischarge_cfs = MnDischarge_cfs*0.02831)
+dat_discharge <- read.csv("Data/Processed/USGS_discharge.csv")%>% 
+  mutate(Discharge_cfs = Discharge_cfs*0.02831)
 
 #Reach 1 ####
 
@@ -68,6 +71,7 @@ MileDays_R1 <- dat_drying %>%
   ungroup() %>% 
   group_by(Date) %>% 
   mutate(MileDays = max(MD)) %>% 
+  mutate(MileDays = MileDays*1.6) %>% 
   distinct(Date, MileDays) %>% 
   ungroup(Date) %>% 
   select(!Date)
@@ -331,7 +335,7 @@ Reach2 <- as.data.frame(cbind(Ext_ExtChng_R2, MileDays_R2, TempPrecip_R2,
 
 #Final dataframe
 DiversionSubreachData <- rbind(Reach1, Reach2)
-# write.csv(DiversionSubreachData, "Data/Processed/DiversionSubreachData.csv", row.names = F)
+write.csv(DiversionSubreachData, "Data/Processed/DiversionSubreachData.csv", row.names = F)
 
 
 #percent diverted #####

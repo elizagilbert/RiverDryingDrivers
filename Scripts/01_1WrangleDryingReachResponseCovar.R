@@ -16,9 +16,12 @@ dat_drying <- read.csv("Data/Processed/2010_2021_WetDryTenths.csv")
 dat_TempPrecip_LosLunas <- read.csv("Data/Raw/TempPrecip_LosLunas_GHCNDUSC00295150.csv") 
 dat_TempPrecip_AllOtherLocs <- read.csv("Data/Raw/TempPrecip_AllOtherLocations.csv") # I downloaded this as metric data so no conversion needed
 
-dat_diversions <- read.csv("Data/Processed/MRGCD_diversion.csv")
-dat_returns <- read.csv("Data/Processed/MRGCD_returns.csv")
-dat_discharge <- read.csv("Data/Processed/USGS_discharge.csv") 
+dat_diversions <- read.csv("Data/Processed/MRGCD_diversion.csv")%>% 
+  mutate(MnDischarge_cfs = MnDischarge_cfs*0.02831) #convert to cms
+dat_returns <- read.csv("Data/Processed/MRGCD_returns.csv")%>% 
+  mutate(MnDischarge_cfs = MnDischarge_cfs*0.02831) #convert to cms
+dat_discharge <- read.csv("Data/Processed/USGS_discharge.csv") %>% 
+  mutate(Discharge_cfs = Discharge_cfs*0.02831) #convert to cms
 
 #Reach 1 ####
 
@@ -48,6 +51,7 @@ MileDays_R1 <- dat_drying %>%
   ungroup() %>% 
   group_by(Date) %>% 
   mutate(MileDays = max(MD)) %>% 
+  mutate(MileDays = MileDays*1.6) %>% #convert to kilometers
   distinct(Date, MileDays) %>% 
   ungroup(Date) %>% 
   select(!Date)
@@ -372,4 +376,4 @@ Reach3 <- as.data.frame(cbind(Ext_ExtChng_R3, MileDays_R3, TempPrecip_R3,
 
 #Final dataframe
 DryingSubreachData <- rbind(Reach1, Reach2, Reach3)
-# write.csv(DryingSubreachData, "Data/Processed/DryingSubreachData.csv", row.names = F)
+write.csv(DryingSubreachData, "Data/Processed/DryingSubreachData.csv", row.names = F)

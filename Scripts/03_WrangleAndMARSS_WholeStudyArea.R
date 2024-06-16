@@ -11,7 +11,7 @@ library(tidyr)
 library(MARSS)
 library(beepr)
 
-#data predictor ####
+#data response ####
 dat_drying <- read.csv("Data/Processed/2010_2021_WetDryTenths.csv")
 
 MileDays_df <- dat_drying %>% 
@@ -26,6 +26,7 @@ MileDays_df <- dat_drying %>%
   ungroup() %>% 
   group_by(Date) %>% 
   mutate(MileDays = max(MD), Reach = 1) %>% 
+  mutate(MileDays = MileDays*1.6) %>%  #turns this into KilometerDays
   distinct(Date, MileDays, Reach) %>% 
   ungroup(Date) 
 
@@ -35,6 +36,7 @@ MileDays_df %>%
   summarise(max = max(MileDays)) %>%
   arrange(max)
 
+#scaling and data wrangle function 
 predictor_func <- function(data, predictor){
   result <- 
     as.matrix(data %>% 
@@ -80,15 +82,20 @@ dat_TempPrecip_AllOtherLocs <- read.csv("Data/Raw/TempPrecip_AllOtherLocations.c
 dat_TempPrecip_All <- rbind(dat_TempPrecip_LosLunas, dat_TempPrecip_AllOtherLocs)
 
 dat_diversions <- read.csv("Data/Processed/MRGCD_diversion.csv") %>% 
-  mutate(Date = as.Date(Date, format = "%Y-%m-%d"), Month = month(Date))
+  mutate(Date = as.Date(Date, format = "%Y-%m-%d"), Month = month(Date)) %>% 
+  mutate(MnDischarge_cfs = MnDischarge_cfs*0.0283) #converts to cms
 
 dat_returns <- read.csv("Data/Processed/MRGCD_returns.csv") %>% 
-  mutate(Date = as.Date(Date, format = "%Y-%m-%d"))
+  mutate(Date = as.Date(Date, format = "%Y-%m-%d"))%>% 
+  mutate(MnDischarge_cfs = MnDischarge_cfs*0.0283) #converts to cms
+
 
 dat_discharge <- read.csv("Data/Processed/USGS_discharge.csv") %>% 
   mutate(Date = as.Date(dateTime, format = "%Y-%m-%d"), Month = month(Date)) %>%
   filter(site_name != "Bernardo" & site_name != "LfccSanMarcial" & site_name != "RioPuerco" &
-           site_name !="SanAntonio")
+           site_name !="SanAntonio") %>% 
+  mutate(Discharge_cfs = Discharge_cfs*0.0283) #converts to cms
+
 
 #Temp Precip 1 river ####
 
@@ -163,11 +170,6 @@ Diversions_1River <- dat_diversions %>%
   ungroup() %>% 
   select(Date, DiversionCum)
 
-Returns_1River %>%
-  group_by(year(Date)) %>%
-  summarise(max = max(ReturnsCum_cfs)) %>%
-  arrange(max)
-
 #Returns 1 river  ####
 Returns_1River <- dat_returns %>% 
   filter(Date >= "2010-01-01") %>% 
@@ -216,6 +218,10 @@ mod_1state <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
                    c=Cov_matrix, C=C_1state, Z = matrix(1), A = matrix(1), 
                    R = "diagonal and equal", x0 = "equal", tinitx = 0)
 
+mod_1state_null <- list(B = matrix(1), U = matrix(1), Q = "diagonal and equal",
+                                   Z = matrix(1), A = matrix(1), 
+                                   R = "diagonal and equal", x0 = "equal", tinitx = 0)
+
 #model
 
 start.time <- Sys.time()
@@ -231,13 +237,33 @@ beep(1)
 end.time <- Sys.time()
 print(round(end.time - start.time,2))
 
+
+start.time <- Sys.time()
+
+MD_1River_Null <- MARSS(MileDays_dat, model = mod_1state_null, 
+                        control = list(maxit = 100, allow.degen = T, trace =1, safe = T, 
+                                       conv.test.slope.tol = 0.09), fit = T) 
+MD_1River_Null_BFGS <- MARSS(y = MileDays_dat, model = mod_1state_null, control = list(maxit = 5000), 
+                        method = "BFGS", inits = MD_1River_Null$par) 
+
+
+beep(1)
+end.time <- Sys.time()
+print(round(end.time - start.time,2))
+
 #save model
 saveRDS(MD_1state_BFGS, "ModelOutput/MileDays/MD_1River_BFGS.rds")
 MD_1state_BFGS <- readRDS("ModelOutput/MileDays/MD_1River_BFGS.rds")
 
+saveRDS(MD_1River_Null_BFGS, "ModelOutput/MileDays/MD_1River_Null_BFGS.rds")
+MD_1River_Null_BFGS <- readRDS("ModelOutput/MileDays/MD_1River_Null_BFGS.rds")
+
 #residuals
 autoplot.marssMLE(MD_1state_BFGS) #good
 MARSSparamCIs(MD_1state_BFGS)
+
+autoplot.marssMLE(MD_1River_Null_BFGS) #good
+MARSSparamCIs(MD_1River_Null_BFGS)
 
 
 #RMSE
@@ -246,7 +272,8 @@ pred_marss1 <- fitted(MD_1state_BFGS, type = "ytT", interval = "prediction")
 df1 <- cbind(conf_marss1, pred_marss1[, c(".lwr", ".upr")]) %>% 
   rename(Reach = 1)
 
-MD_1_RMSE <- sqrt(mean(df3$y - df3$.fitted)^2)
+MD_1_RMSE <- sqrt(mean(df1$y - df1$.fitted)^2)
+MD_1_RMSE
 
 ggplot(df3, aes(x = t, y = y))+
   geom_line(linewidth = 2)+
